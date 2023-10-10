@@ -15,7 +15,10 @@ from tqdm import tqdm
 import torch
 from minihack import RewardManager
 
-from dqn.rewards import staircase_reward
+from dqn.rewards import staircase_reward, pickup_key, apple_reward
+from nle import nethack
+
+from minihack.level_generator import LevelGenerator
 
 def get_glyphs(state):
     glyphs = state["glyphs"]
@@ -132,34 +135,64 @@ def visualize(env, agent, pygame_frame_rate, video_frame_rate, save_dir, max_tim
         max_timesteps
     )
 
+
+
+
 hyper_params = {
         "seed": 42,  # which seed to use
+        # "env": "MiniHack-Eat-v0",  # name of the game
         "env": "MiniHack-Room-5x5-v0",  # name of the game
         "replay-buffer-size": int(1e6),  # replay buffer size
-        "learning-rate": 0.01,  # learning rate for Adam optimizer
-        "discount-factor": 0.99,  # discount factor
-        "num-steps": int(1e5),  # total number of steps to run the environment for
+        "learning-rate": 0.0001,  # learning rate for Adam optimizer
+        "discount-factor": 0.95,  # discount factor
+        "num-steps": int(20000),  # total number of steps to run the environment for
         "batch-size": 32,  # number of transitions to optimize at the same time
         "learning-starts": 1000,  # number of steps before learning starts
         "learning-freq": 1,  # number of iterations between every optimization step
         "use-double-dqn": True,  # use double deep Q-learning
-        "target-update-freq": 1000,  # number of iterations between every target network update
+        "target-update-freq": 5000,  # number of iterations between every target network update
         "eps-start": 1.0,  # e-greedy start threshold
         "eps-end": 0.1,  # e-greedy end threshold
-        "eps-fraction": 0.1,  # fraction of num-steps
+        "eps-fraction": 0.01,  # fraction of num-steps
         "print-freq": 10,
 }
 
-#
-# VISUALIZATION HERE ...
-env = gym.make(hyper_params["env"], observation_keys=("glyphs", "pixel", "message", "chars"))
-
 reward_manager = RewardManager()
-reward_manager.add_custom_reward_fn(staircase_reward)
+# reward_manager.add_custom_reward_fn(staircase_reward)
+# reward_manager.add_custom_reward_fn(apple_reward)
+reward_manager.add_custom_reward_fn(pickup_key)
+reward_manager.add_eat_event("apple", reward = 2.0)
 
 
-# np.random.seed(hyper_params["seed"])
-# random.seed(hyper_params["seed"])
+EAT_ACTIONS = tuple(nethack.CompassDirection) + (nethack.Command.EAT,) + (nethack.Command.PICKUP,)# Eat is to complete an episode by confirmation
+
+lvl_gen = LevelGenerator(w=5, h=5)
+lvl_gen.add_object("apple", "%")
+
+env = gym.make(
+    "MiniHack-Skill-Custom-v0",
+    des_file=lvl_gen.get_des(),
+    observation_keys=("glyphs", "pixel", "message", "chars"),
+    reward_manager = reward_manager,
+               reward_lose=-1.0,
+               penalty_time=-0.005,
+               penalty_step=-0.1,
+    actions = EAT_ACTIONS
+)
+
+# # VISUALIZATION HERE ...
+# env = gym.make(hyper_params["env"],
+#                observation_keys=("glyphs", "pixel", "message", "chars"),
+#                reward_manager = reward_manager,
+#                reward_lose=-1.0,
+#                penalty_time=-0.005,
+#                penalty_step=-0.1,
+#                actions = EAT_ACTIONS
+#                )
+
+
+np.random.seed(hyper_params["seed"])
+random.seed(hyper_params["seed"])
 torch.manual_seed(42)
 
 replay_buffer = ReplayBuffer(hyper_params["replay-buffer-size"])
@@ -237,14 +270,13 @@ for t in tqdm(range(hyper_params["num-steps"])):
         print("% time spent exploring: {}".format(int(100 * eps_threshold)))
         print("********************************************************\n")
 
-        visualize(
-        env,
-        agent,
-        pygame_frame_rate=60,
-        video_frame_rate=5,
-        save_dir="videos",
-        max_timesteps=100,
-        num = mean_100ep_reward
-    )
-
-
+env.reset()
+visualize(
+    env,
+    agent,
+    pygame_frame_rate=60,
+    video_frame_rate=5,
+    save_dir="videos",
+    max_timesteps=1000,
+    num = 10
+)
