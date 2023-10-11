@@ -20,10 +20,11 @@ from nle import nethack
 
 from minihack.level_generator import LevelGenerator
 
-def get_glyphs(state):
-    glyphs = state["glyphs"]
-    glyphs = glyphs / glyphs.max()  #put in the  range 0-1
-    return torch.from_numpy(glyphs.reshape((1,1,21,79))).squeeze(0)
+def get_glyphs_crop(state):
+    glyphs_crop = state["glyphs_crop"]
+    glyphs_crop = glyphs_crop / glyphs_crop.max()  #put in the  range 0-1
+    # return torch.from_numpy(glyphs_crop.reshape((1,1,21,79))).squeeze(0)
+    return torch.from_numpy(glyphs_crop.reshape((1,1,9,9))).squeeze(0)
 
 # Function to scale an observation to a new size using Pygame
 def scale_observation(observation, new_size):
@@ -94,9 +95,9 @@ def record_video(env, agent, video_filepath, pygame_frame_rate, video_frame_rate
     steps = 1
 
     while not done and steps < max_timesteps:
-        action = agent.act(get_glyphs(obs))
+        action = agent.act(get_glyphs_crop(obs))
         obs, _, done, _ = env.step(action)
-        # obs = get_glyphs(obs)
+        # obs = get_glyphs_crop(obs)
         render(obs, screen, font, text_color)
 
         # Capture the current frame and save it to the video
@@ -141,54 +142,78 @@ def visualize(env, agent, pygame_frame_rate, video_frame_rate, save_dir, max_tim
 hyper_params = {
         "seed": 42,  # which seed to use
         # "env": "MiniHack-Eat-v0",  # name of the game
-        "env": "MiniHack-Room-5x5-v0",  # name of the game
-        "replay-buffer-size": int(1e6),  # replay buffer size
-        "learning-rate": 0.0001,  # learning rate for Adam optimizer
-        "discount-factor": 0.95,  # discount factor
-        "num-steps": int(20000),  # total number of steps to run the environment for
-        "batch-size": 32,  # number of transitions to optimize at the same time
-        "learning-starts": 1000,  # number of steps before learning starts
-        "learning-freq": 1,  # number of iterations between every optimization step
+        "env": "MiniHack-LavaCross-Levitate-Potion-Inv-Full-v0",  # name of the game
+        "replay-buffer-size": int(5e3),  # replay buffer size
+        "learning-rate": 1e-3,  # learning rate for Adam optimizer
+        "discount-factor": 0.99,  # discount factor
+        "num-steps": int(30000),  # total number of steps to run the environment for
+        "batch-size": 64,  # number of transitions to optimize at the same time
+        "learning-starts": 2000,  # number of steps before learning starts
+        "learning-freq": 2,  # number of iterations between every optimization step
         "use-double-dqn": True,  # use double deep Q-learning
-        "target-update-freq": 5000,  # number of iterations between every target network update
+        "target-update-freq": 1000,  # number of iterations between every target network update
         "eps-start": 1.0,  # e-greedy start threshold
-        "eps-end": 0.1,  # e-greedy end threshold
-        "eps-fraction": 0.01,  # fraction of num-steps
+        "eps-end": 0.01,  # e-greedy end threshold
+        "eps-fraction": 0.3,  # fraction of num-steps
         "print-freq": 10,
 }
 
 reward_manager = RewardManager()
-# reward_manager.add_custom_reward_fn(staircase_reward)
-# reward_manager.add_custom_reward_fn(apple_reward)
-reward_manager.add_custom_reward_fn(pickup_key)
-reward_manager.add_eat_event("apple", reward = 2.0)
+# # # reward_manager.add_custom_reward_fn(staircase_reward)
+# # # reward_manager.add_custom_reward_fn(apple_reward)
+# # reward_manager.add_custom_reward_fn(pickup_key)
+reward_manager.add_eat_event("apple", reward = 1.0)
 
+# ""
+# # reward_manager.add_message_event(["The door opens."], reward=1.5, terminal_required=True)
+reward_manager.add_message_event(["The door opens.", "You start to float in the air!", "What do you want to drink? [f or ?*]"], reward=1.0, terminal_required=False)
+reward_manager.add_message_event(["It's a wall.", "The stairs are solidly fixed to the floor.",
+                                  "What a strange direction! Never mind.",
+                                  "You stop at the edge of the lava."], reward=-0.1, terminal_required=False, repeatable=True)
 
 EAT_ACTIONS = tuple(nethack.CompassDirection) + (nethack.Command.EAT,) + (nethack.Command.PICKUP,)# Eat is to complete an episode by confirmation
-
-lvl_gen = LevelGenerator(w=5, h=5)
-lvl_gen.add_object("apple", "%")
-
-env = gym.make(
-    "MiniHack-Skill-Custom-v0",
-    des_file=lvl_gen.get_des(),
-    observation_keys=("glyphs", "pixel", "message", "chars"),
-    reward_manager = reward_manager,
-               reward_lose=-1.0,
-               penalty_time=-0.005,
-               penalty_step=-0.1,
-    actions = EAT_ACTIONS
+MOVE_ACTIONS = tuple(nethack.CompassDirection)
+NAVIGATE_ACTIONS =   (
+    # nethack.Command.APPLY,
+    # nethack.Command.OPEN,
+    # nethack.Command.PICKUP,
+    # nethack.Command.WEAR,
+    # nethack.Command.WIELD,
+    nethack.Command.QUAFF,
+    nethack.Command.FIRE,
+    # nethack.Command.INVOKE,
+    # nethack.Command.ZAP,
+    # nethack.Command.SWAP,
+    # nethack.Command.EAT
+    # nethack.Command.AUTOPICKUP,
+    # nethack.Command.KICK
+    # nethack.Command.FIRE
 )
 
-# # VISUALIZATION HERE ...
-# env = gym.make(hyper_params["env"],
-#                observation_keys=("glyphs", "pixel", "message", "chars"),
-#                reward_manager = reward_manager,
+
+# lvl_gen = LevelGenerator(w=8, h=8)
+# lvl_gen.add_object("apple", "%")
+
+# env = gym.make(
+#     "MiniHack-Skill-Custom-v0",
+#     des_file=lvl_gen.get_des(),
+#     observation_keys=("glyphs_crop", "pixel", "message", "chars"),
+#     reward_manager = reward_manager,
 #                reward_lose=-1.0,
 #                penalty_time=-0.005,
 #                penalty_step=-0.1,
-#                actions = EAT_ACTIONS
-#                )
+#     actions = EAT_ACTIONS
+# )
+
+# VISUALIZATION HERE ...
+env = gym.make(hyper_params["env"],
+               observation_keys=("glyphs_crop", "pixel", "message", "chars"),
+               reward_manager = reward_manager,
+            #    reward_lose=-1.0,
+            #    penalty_time=-0.005,
+            #    penalty_step=-0.1,
+               actions = NAVIGATE_ACTIONS
+               )
 
 
 np.random.seed(hyper_params["seed"])
@@ -198,7 +223,7 @@ torch.manual_seed(42)
 replay_buffer = ReplayBuffer(hyper_params["replay-buffer-size"])
 
 agent = DQNAgent(
-        env.observation_space["glyphs"],
+        env.observation_space["glyphs_crop"],
         env.action_space,
         replay_buffer,
         hyper_params["use-double-dqn"],
@@ -213,7 +238,7 @@ eps_timesteps = hyper_params["eps-fraction"] * float(hyper_params["num-steps"])
 episode_rewards = [0.0]
 episode_loss = []
 
-state = get_glyphs(env.reset())
+state = get_glyphs_crop(env.reset())
 
 
 
@@ -233,13 +258,13 @@ for t in tqdm(range(hyper_params["num-steps"])):
         action = agent.act(state)
 
     next_state, reward, done, _ = env.step(action)
-    next_state = get_glyphs(next_state)
+    next_state = get_glyphs_crop(next_state)
     agent.replay_buffer.add(state, action, reward, next_state, float(done))
     state = next_state
 
     episode_rewards[-1] += reward
     if done:
-        state = get_glyphs(env.reset())
+        state = get_glyphs_crop(env.reset())
         episode_rewards.append(0.0)
 
     if (
@@ -270,13 +295,23 @@ for t in tqdm(range(hyper_params["num-steps"])):
         print("% time spent exploring: {}".format(int(100 * eps_threshold)))
         print("********************************************************\n")
 
-env.reset()
-visualize(
-    env,
-    agent,
-    pygame_frame_rate=60,
-    video_frame_rate=5,
-    save_dir="videos",
-    max_timesteps=1000,
-    num = 10
-)
+# env = gym.make("MiniHack-Room-15x15-v0",
+#                observation_keys=("glyphs_crop", "pixel", "message", "chars"),
+#             #    reward_manager = reward_manager,
+#             #    reward_lose=-1.0,
+#             #    penalty_time=-0.005,
+#             #    penalty_step=-0.1,
+#                actions = NAVIGATE_ACTIONS
+#                )
+
+for vid in range(3):
+    env.reset()
+    visualize(
+        env,
+        agent,
+        pygame_frame_rate=60,
+        video_frame_rate=5,
+        save_dir="new_videos",
+        max_timesteps=1000,
+        num = vid
+    )

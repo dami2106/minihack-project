@@ -43,13 +43,21 @@ def apple_reward(env, prev_obs, action, current_obs):
 
     return distance_to_stairs
 
+
+"""
+Change this 
+# """
 def pickup_key(env, prev_obs, action, current_obs):
-    #Key is '('
-    key_current = np.where(np.array(current_obs[1]) == ord('%'))
-    key_prev = np.where(np.array(prev_obs[1]) == ord('%'))
+    #Key is '('200
+    key_current = np.where(np.array(current_obs[1]) == ord('('))
+    key_prev = np.where(np.array(prev_obs[1]) == ord('('))
 
-    if key_current[0].shape[0] == 0 and key_prev[0].shape[0] != 0:
-        return 1.0
+    # if key_current[0].shape[0] == 0 and key_prev[0].shape[0] != 0:
+    #     return 1.2
 
-    return 0.0
+    # #GET REWARD FOR PICKING UP KEY
+    # if env.key_in_inventory("key") != None:
+    #     print("<<<<<<<<<<<<<<<<<<KEY IN INVENTORY>>>>>>>>>>>>>>>>>!@##$$%^&*")
+    #     return 1.1
+    # return -0.5
     
