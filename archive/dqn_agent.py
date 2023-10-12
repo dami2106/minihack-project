@@ -15,7 +15,7 @@ from tqdm import tqdm
 import torch
 from minihack import RewardManager
 
-from dqn.rewards import staircase_reward, pickup_key, apple_reward
+from dqn.rewards import staircase_reward, pickup_key, apple_reward, fuck_pickup
 from nle import nethack
 
 from minihack.level_generator import LevelGenerator
@@ -144,12 +144,12 @@ hyper_params = {
         # "env": "MiniHack-Eat-v0",  # name of the game
         "env": "MiniHack-LavaCross-Levitate-Potion-Inv-Full-v0",  # name of the game
         "replay-buffer-size": int(5e3),  # replay buffer size
-        "learning-rate": 1e-3,  # learning rate for Adam optimizer
+        "learning-rate": 1e-4,  # learning rate for Adam optimizer
         "discount-factor": 0.99,  # discount factor
-        "num-steps": int(30000),  # total number of steps to run the environment for
-        "batch-size": 64,  # number of transitions to optimize at the same time
+        "num-steps": int(600000),  # total number of steps to run the environment for
+        "batch-size": 256,  # number of transitions to optimize at the same time
         "learning-starts": 2000,  # number of steps before learning starts
-        "learning-freq": 2,  # number of iterations between every optimization step
+        "learning-freq": 5,  # number of iterations between every optimization step
         "use-double-dqn": True,  # use double deep Q-learning
         "target-update-freq": 1000,  # number of iterations between every target network update
         "eps-start": 1.0,  # e-greedy start threshold
@@ -163,17 +163,20 @@ reward_manager = RewardManager()
 # # # reward_manager.add_custom_reward_fn(apple_reward)
 # # reward_manager.add_custom_reward_fn(pickup_key)
 reward_manager.add_eat_event("apple", reward = 1.0)
+reward_manager.add_message_event(["What do you want to drink? [f or ?*]"], reward=1.0, terminal_required=False)
+reward_manager.add_message_event(["You start to float in the air!"], reward=1.0, terminal_required=False)
+reward_manager.add_custom_reward_fn(fuck_pickup)
 
 # ""
 # # reward_manager.add_message_event(["The door opens."], reward=1.5, terminal_required=True)
-reward_manager.add_message_event(["The door opens.", "You start to float in the air!", "What do you want to drink? [f or ?*]"], reward=1.0, terminal_required=False)
-reward_manager.add_message_event(["It's a wall.", "The stairs are solidly fixed to the floor.",
-                                  "What a strange direction! Never mind.",
-                                  "You stop at the edge of the lava."], reward=-0.1, terminal_required=False, repeatable=True)
+# reward_manager.add_message_event(["The door opens.", "You start to float in the air!", "What do you want to drink? [f or ?*]"], reward=1.0, terminal_required=False)
+# reward_manager.add_message_event(["It's a wall.", "The stairs are solidly fixed to the floor.",
+#                                   "What a strange direction! Never mind.",
+#                                   "You stop at the edge of the lava."], reward=-0.1, terminal_required=False, repeatable=True)
 
 EAT_ACTIONS = tuple(nethack.CompassDirection) + (nethack.Command.EAT,) + (nethack.Command.PICKUP,)# Eat is to complete an episode by confirmation
 MOVE_ACTIONS = tuple(nethack.CompassDirection)
-NAVIGATE_ACTIONS =   (
+NAVIGATE_ACTIONS = MOVE_ACTIONS +  (
     # nethack.Command.APPLY,
     # nethack.Command.OPEN,
     # nethack.Command.PICKUP,
@@ -209,7 +212,7 @@ NAVIGATE_ACTIONS =   (
 env = gym.make(hyper_params["env"],
                observation_keys=("glyphs_crop", "pixel", "message", "chars"),
                reward_manager = reward_manager,
-            #    reward_lose=-1.0,
+               reward_lose=-2.0,
             #    penalty_time=-0.005,
             #    penalty_step=-0.1,
                actions = NAVIGATE_ACTIONS

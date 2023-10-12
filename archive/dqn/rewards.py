@@ -61,3 +61,12 @@ def pickup_key(env, prev_obs, action, current_obs):
     #     return 1.1
     # return -0.5
     
+
+def fuck_pickup(env, prev_obs, action, current_obs):
+    current_msg = current_obs[env._observation_keys.index("message")]
+    prev_msg = prev_obs[env._observation_keys.index("message")]
+
+    if current_msg.all() == prev_msg.all():
+        return -1.0
+    
+    return 0.0

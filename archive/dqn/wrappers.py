@@ -11,6 +11,9 @@ import cv2
 cv2.ocl.setUseOpenCL(False)
 
 
+"""
+Useful wrappers taken from OpenAI (https://github.com/openai/baselines)
+"""
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):
         """Sample initial states by taking random number of no-ops on reset.
@@ -42,7 +45,6 @@ class NoopResetEnv(gym.Wrapper):
     def step(self, ac):
         return self.env.step(ac)
 
-
 class FireResetEnv(gym.Wrapper):
     def __init__(self, env):
         """Take action on reset for environments that are fixed until firing."""
@@ -62,7 +64,6 @@ class FireResetEnv(gym.Wrapper):
 
     def step(self, ac):
         return self.env.step(ac)
-
 
 class EpisodicLifeEnv(gym.Wrapper):
     def __init__(self, env):
@@ -100,7 +101,6 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.lives = self.env.unwrapped.ale.lives()
         return obs
 
-
 class MaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env, skip=4):
         """Return only every `skip`-th frame"""
@@ -134,7 +134,6 @@ class MaxAndSkipEnv(gym.Wrapper):
     def reset(self, **kwargs):
         return self.env.reset(**kwargs)
 
-
 class ClipRewardEnv(gym.RewardWrapper):
     def __init__(self, env):
         gym.RewardWrapper.__init__(self, env)
@@ -142,7 +141,6 @@ class ClipRewardEnv(gym.RewardWrapper):
     def reward(self, reward):
         """Bin reward to {+1, 0, -1} by its sign."""
         return np.sign(reward)
-
 
 class WarpFrame(gym.ObservationWrapper):
     def __init__(self, env):
@@ -157,13 +155,11 @@ class WarpFrame(gym.ObservationWrapper):
         )
 
     def observation(self, frame):
-        frame = frame["pixel_crop"]
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = cv2.resize(
             frame, (self.width, self.height), interpolation=cv2.INTER_AREA
         )
         return frame[:, :, None]
-
 
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
@@ -194,7 +190,6 @@ class FrameStack(gym.Wrapper):
         assert len(self.frames) == self.k
         return LazyFrames(list(self.frames))
 
-
 class ScaledFloatFrame(gym.ObservationWrapper):
     def __init__(self, env):
         gym.ObservationWrapper.__init__(self, env)
@@ -203,7 +198,6 @@ class ScaledFloatFrame(gym.ObservationWrapper):
         # careful! This undoes the memory optimization, use
         # with smaller replay buffers only.
         return np.array(observation).astype(np.float32) / 255.0
-
 
 class LazyFrames(object):
     def __init__(self, frames):
@@ -223,7 +217,6 @@ class LazyFrames(object):
 
     def __getitem__(self, i):
         return self._frames[i]
-
 
 class PyTorchFrame(gym.ObservationWrapper):
     """Image shape to num_channels x height x width"""
