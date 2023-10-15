@@ -9,6 +9,16 @@ from pygame.locals import *
 import torch
 # from train_dqn import normalize_glyphs
 
+
+def door_opened(env, prev, action, curr):
+    glyphs = curr[env._observation_keys.index("chars")]
+    cur_pos = glyph_pos(glyphs, ord(">"))
+    if cur_pos is None:
+        return 0.0
+    print("Door Opened!!")
+    return 1.0
+    
+
 def go_right_bonus(env, prev, action, curr):
     # Get the x coord of the @
     glyphs = curr[env._observation_keys.index("chars")]
