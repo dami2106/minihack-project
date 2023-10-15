@@ -39,7 +39,9 @@ class ACAgent:
 
         self.optimiser = torch.optim.Adam(self.model.parameters(), lr=lr)
 
-        for _ in range(max_episodes):
+        self.score = []
+
+        for ep in range(max_episodes):
             
 
             state = self.env.reset()
@@ -51,6 +53,8 @@ class ACAgent:
                 "actor_values" : [],
                 "critic_values" : []
             }
+
+
 
             #Generate an episode 
             for _ in range(max_episode_length):
@@ -65,7 +69,7 @@ class ACAgent:
 
                 # self.replay_buffer.add(state, best_action, reward, next_state, done)
 
-
+                
                 episode_metrics["reward"].append(reward)
                 episode_metrics["actor_values"].append(
                     torch.distributions.Categorical(act).log_prob(best_action)
@@ -81,6 +85,11 @@ class ACAgent:
 
             # episode_score = sum(episode_metrics["reward"])
             episode_return = self.calc_return(episode_metrics["reward"])
+
+            self.score.append(np.sum(episode_metrics["reward"]))
+            
+            print(f"Episode : {ep}, Reward : {np.round(np.sum(episode_metrics['reward']), 3)}, Avg Reward : {np.round(np.mean(self.score[-50:]), 3)}")
+
 
             loss = 0
             for a, c, r in zip(episode_metrics["actor_values"], episode_metrics["critic_values"], episode_return):
@@ -119,10 +128,7 @@ class ACAgent:
             returns.append(G)
         
         return torch.from_numpy(np.array(returns[::-1])).float().to(device)
-
-
-
-                    
+  
     def act(self, observation):
         state = get_observation(observation)
         act, _ = self.model.forward(state)

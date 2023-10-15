@@ -10,40 +10,37 @@ from nle import nethack
 from minihack import RewardManager
 import torch
 
+import os 
+
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
+
 hyper_params = {
         'replay-buffer-size': int(1e6),
-        'learning-rate': 0.01,
+        'learning-rate': 1e-4,
         'discount-factor': 0.99,  # discount factor
-        'num-steps': int(2e5//2),  # Steps to run for, max episodes should be hit before this
+        'num-steps': int(10000),  # Steps to run for, max episodes should be hit before this
         'batch-size': 32,  
         'learning-starts': 1000,  # set learning to start after 1000 steps of exploration
         'learning-freq': 1,  # Optimize after each step
         'use-double-dqn': True,
-        'target-update-freq': 1000, # number of iterations between every target network update
+        'target-update-freq': 500, # number of iterations between every target network update
         'eps-start': 1.0,  # e-greedy start threshold 
         'eps-end': 0.1,  # e-greedy end threshold 
         'eps-fraction': 0.3,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
-        'seed' : 42,
+        'seed' : 69,
         'env' : "MiniHack-Room-5x5-v0"
 
     }
 
 np.random.seed(hyper_params["seed"])
 random.seed(hyper_params["seed"])
-
-ACTIONS = tuple(nethack.CompassDirection)
-# ACTIONS = (
-#     nethack.CompassDirection.N,
-#     nethack.CompassDirection.E,
-#     nethack.CompassDirection.S,
-#     nethack.CompassDirection.W,
-#     # nethack.Command.QUAFF,
-#     # nethack.Command.PICKUP,
-#     # nethack.Command.EAT,
-#     # nethack.Command.FIRE
-#     # nethack.Command.APPLY
-#     )
+os.environ['PYTHONHASHSEED'] = str(hyper_params["seed"])
+torch.manual_seed(hyper_params["seed"])
+torch.cuda.manual_seed(hyper_params["seed"])
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = True
 
 reward_manager = RewardManager()
 
@@ -51,7 +48,7 @@ reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
 # reward_manager.add_message_event(["fixed", "wall", "stone", "Stone"], reward = -0.5, terminal_required=False, terminal_sufficient=False)
 reward_manager.add_custom_reward_fn(distance_to_object)
-
+reward_manager.add_location_event("staircase down", 1.0, terminal_sufficient=True)
 
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
@@ -60,9 +57,11 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-1,
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
-                actions = ACTIONS,
-                # reward_manager=reward_manager
+                # actions = ACTIONS,
+                reward_manager=reward_manager
                 )
+
+env.seed(hyper_params["seed"])  
 
 replay_buffer = ReplayBuffer(hyper_params["replay-buffer-size"])
 
@@ -79,22 +78,8 @@ agent = DQNAgent(
 eps_timesteps = hyper_params["eps-fraction"] * float(hyper_params["num-steps"])
 episode_rewards = [0.0]
 
-state = env.reset() #must be pixels only 
+state = env.reset() 
 
-
-
-#Mike code
-lava_count = 0
-key_count = 0
-last_action = None
-prev_action = None
-
-old_best=-10000
-new_best=-10000
-
-best_model = None
-
-# You move over some lava.
 
 for t in range(hyper_params["num-steps"]):
     fraction = min(1.0, float(t) / eps_timesteps)
@@ -108,26 +93,9 @@ for t in range(hyper_params["num-steps"]):
     else:
         action = agent.act(normalize_glyphs(state))
 
-    # st  = ""
-    # for n in state["message"]:
-    #     st += chr(n)
-
-    # if "What do you want to drink? [f or ?*]" in st:
-    #     # print("Set action to 5")
-    #     action = 5
-    
-    # prev_action = last_action
-    # last_action = action
-
-    # if prev_action == 4:
-    #     action = 5
 
     next_state, reward, done, _ = env.step(action)
-
-    # st  = ""
-    # for n in next_state["message"]:
-    #     st += chr(n)
-    # print(st)
+    writer.add_scalar('Reward', reward, t)
 
     # next_state = normalize_glyphs(next_state)
     agent.replay_buffer.add(normalize_glyphs(state), action, reward, normalize_glyphs(next_state), float(done))
@@ -136,14 +104,7 @@ for t in range(hyper_params["num-steps"]):
     episode_rewards[-1] += reward
     if done:
         state = env.reset()
-
-        new_best=episode_rewards[-1]
         episode_rewards.append(0.0)
-        lava_count = 0
-        key_count = 0
-        last_action = None
-        prev_action = None
-
     if (
         t > hyper_params["learning-starts"]
         and t % hyper_params["learning-freq"] == 0
@@ -157,22 +118,17 @@ for t in range(hyper_params["num-steps"]):
         agent.update_target_network()
 
     num_episodes = len(episode_rewards)
-
-    if(
-        new_best>old_best
-    ):
-        new_best=old_best
-        # make_video(env, agent, 30, 30, hyper_params["env"], 1000, f"video_{t}_{new_best}.mp4")
-        best_model = agent
-        torch.save(agent, 'bestOne')
         
-
     if (
         done
         and hyper_params["print-freq"] is not None
         and len(episode_rewards) % hyper_params["print-freq"] == 0
     ):
         mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
+        writer.add_scalar('Average 100ep Reward', mean_100ep_reward, t)
+        writer.add_scalar('Epsilon', eps_threshold, t)
+        writer.add_scalar('% time spent exploring', int(100 * eps_threshold), t)
+
         print("********************************************************")
         print("steps: {}".format(t))
         print("episodes: {}".format(num_episodes))
@@ -181,9 +137,12 @@ for t in range(hyper_params["num-steps"]):
         print("********************************************************")
 
         
+writer.flush()
+writer.close()
 # # torch.save(agent, 'best2')
 # #Load the model in 
 # agent = torch.load('best2')
 for r in range(3):
-    make_video(env, best_model, 30, 30, hyper_params["env"], 1000, f"video_{r}_best.mp4")
+    # make_video(env, best_model, 30, 30, hyper_params["env"], 1000, f"video_{r}_best.mp4")
+    env.reset()
     make_video(env, agent, 30, 30, hyper_params["env"], 1000, f"video_{r}_agent.mp4")
