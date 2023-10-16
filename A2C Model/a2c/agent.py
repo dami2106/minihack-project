@@ -91,14 +91,7 @@ class ACAgent:
             print(f"Episode : {ep}, Reward : {np.round(np.sum(episode_metrics['reward']), 3)}, Avg Reward : {np.round(np.mean(self.score[-50:]), 3)}")
 
 
-            loss = 0
-            for a, c, r in zip(episode_metrics["actor_values"], episode_metrics["critic_values"], episode_return):
-                advantage = r - c.item()
-                actor_loss = -torch.log(a) * advantage
-                r = r.resize(1,1)
-                critic_loss = F.smooth_l1_loss(c, r)
-                loss += (actor_loss + critic_loss)
-
+            loss = self.get_loss(episode_metrics["actor_values"], episode_metrics["critic_values"], episode_return)
             self.optimiser.zero_grad()
             loss.backward()
             self.optimiser.step()
@@ -109,7 +102,13 @@ class ACAgent:
         # return new_model
         # return self.model
 
-
+    def get_loss(self, actor_values, critic_values, rewards):
+        loss = 0
+        for a, c, r in zip(actor_values, critic_values, rewards):
+            actor_loss = -a *  r - c.item()
+            critic_loss = F.smooth_l1_loss(c, r.resize(1,1))
+            loss += (actor_loss + critic_loss)
+        return loss
     
     def calc_return(self, rewards):
         """
@@ -120,17 +119,19 @@ class ACAgent:
         r = rewards.copy()
         r.reverse()
         G = 0
-        returns = []
-
+        returns = [] 
+        # print(r)
         for rew in r:
             G *= self.gamma 
             G += rew
             returns.append(G)
-        
-        return torch.from_numpy(np.array(returns[::-1])).float().to(device)
+
+        returns.reverse()
+
+        return torch.from_numpy(np.array(returns)).float().to(device)
   
     def act(self, observation):
         state = get_observation(observation)
         act, _ = self.model.forward(state)
         best_action = torch.distributions.Categorical(act).sample()
-        return best_action
+        return best_action.item()
