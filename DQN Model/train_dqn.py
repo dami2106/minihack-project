@@ -5,7 +5,7 @@ import gym
 from dqn.agent import DQNAgent
 from dqn.replay_buffer import ReplayBuffer
 from dqn.wrappers import *
-from helper import make_video, normalize_glyphs, distance_to_object
+from helper import make_video, normalize_glyphs, distance_to_object, explore_cave
 from nle import nethack
 from minihack import RewardManager
 import torch
@@ -27,11 +27,10 @@ hyper_params = {
         'target-update-freq': 500, # number of iterations between every target network update
         'eps-start': 1.0,  # e-greedy start threshold 
         'eps-end': 0.1,  # e-greedy end threshold 
-        'eps-fraction': 0.3,  # Percentage of the time that epsilon is annealed
+        'eps-fraction': 0.8,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 69,
-        'env' : "MiniHack-Room-5x5-v0"
-
+        'env' : "MiniHack-MazeWalk-9x9-v0"
     }
 
 np.random.seed(hyper_params["seed"])
@@ -46,9 +45,12 @@ reward_manager = RewardManager()
 
 reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
-# reward_manager.add_message_event(["fixed", "wall", "stone", "Stone"], reward = -0.5, terminal_required=False, terminal_sufficient=False)
-reward_manager.add_custom_reward_fn(distance_to_object)
+reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.5, terminal_required=False, terminal_sufficient=False)
+# reward_manager.add_custom_reward_fn(distance_to_object)
 reward_manager.add_location_event("staircase down", 1.0, terminal_sufficient=True)
+reward_manager.add_custom_reward_fn(explore_cave)
+
+MOVE_ACTIONS = tuple(nethack.CompassDirection)
 
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
@@ -57,7 +59,7 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-1,
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
-                # actions = ACTIONS,
+                actions = MOVE_ACTIONS,
                 reward_manager=reward_manager
                 )
 
@@ -95,7 +97,7 @@ for t in range(hyper_params["num-steps"]):
 
 
     next_state, reward, done, _ = env.step(action)
-    writer.add_scalar('Reward', reward, t)
+    writer.add_scalar(f'DQN/{hyper_params["env"]}/Reward', reward, t)
 
     # next_state = normalize_glyphs(next_state)
     agent.replay_buffer.add(normalize_glyphs(state), action, reward, normalize_glyphs(next_state), float(done))
@@ -125,9 +127,9 @@ for t in range(hyper_params["num-steps"]):
         and len(episode_rewards) % hyper_params["print-freq"] == 0
     ):
         mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
-        writer.add_scalar('Average 100ep Reward', mean_100ep_reward, t)
-        writer.add_scalar('Epsilon', eps_threshold, t)
-        writer.add_scalar('% time spent exploring', int(100 * eps_threshold), t)
+        writer.add_scalar(f'DQN/{hyper_params["env"]}/Average 100ep Reward', mean_100ep_reward, t)
+        writer.add_scalar(f'DQN/{hyper_params["env"]}/Epsilon', eps_threshold, t)
+        writer.add_scalar(f'DQN{hyper_params["env"]}//% time spent exploring', int(100 * eps_threshold), t)
 
         print("********************************************************")
         print("steps: {}".format(t))
@@ -145,4 +147,4 @@ writer.close()
 for r in range(3):
     # make_video(env, best_model, 30, 30, hyper_params["env"], 1000, f"video_{r}_best.mp4")
     env.reset()
-    make_video(env, agent, 30, 30, hyper_params["env"], 1000, f"video_{r}_agent.mp4")
+    make_video(env, agent, 30, 30, "videos/" + hyper_params["env"], 1000, f"video_{r}_agent.mp4")

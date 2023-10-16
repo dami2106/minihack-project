@@ -33,10 +33,10 @@ def distance_to_object(env, prev_obs, action, current_obs):
 
 def normalize_glyphs(state):
     glyphs = state["glyphs"]
-    glyphs = glyphs/glyphs.max()
-    return torch.from_numpy(glyphs.reshape((1,1,21,79))).squeeze(0)
+    # glyphs = glyphs/glyphs.max()
+    glyphs = np.array(glyphs).flatten()
 
-
+    return torch.from_numpy(glyphs).squeeze(0)
 
 
 # Function to scale an observation to a new size using Pygame
@@ -50,6 +50,24 @@ def scale_observation(observation, new_size):
         pygame.Surface: The scaled observation.
     """
     return pygame.transform.scale(observation, new_size)
+
+def explore_cave(env, prev_obs, action, current_obs):
+    chars = current_obs[env._observation_keys.index("chars")]
+    curr_dots = 0
+    prev_dots = 0
+    for row in chars:
+        for char in row:
+            if char == ord("."):
+                curr_dots += 1
+    chars = prev_obs[env._observation_keys.index("chars")]
+    for row in chars:
+        for char in row:
+            if char == ord("."):
+                prev_dots += 1
+    
+    if curr_dots > prev_dots:
+        return 0.8
+    return 0.0
 
 # Function to render the game observation
 def render(obs, screen, font, text_color):

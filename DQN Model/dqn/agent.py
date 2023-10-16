@@ -80,7 +80,8 @@ class DQNAgent:
         input_q_values = self.target_network(states)
         input_q_values = input_q_values.gather(1, actions.unsqueeze(1)).squeeze()
 
-        loss = F.smooth_l1_loss(input_q_values, target_q_values)
+        # loss = F.smooth_l1_loss(input_q_values, target_q_values)
+        loss = F.mse_loss(input_q_values, target_q_values)
 
         self.optimiser.zero_grad()
         loss.backward()
