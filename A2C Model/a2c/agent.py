@@ -8,6 +8,9 @@ import torch.nn.functional as F
 
 from a2c.helper import get_observation
 
+import torch
+from torch.utils.tensorboard import SummaryWriter
+
 device = torch.device("cuda")
 
 class ACAgent:
@@ -40,6 +43,7 @@ class ACAgent:
         self.optimiser = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         self.score = []
+        writer = SummaryWriter()
 
         for ep in range(max_episodes):
             
@@ -95,7 +99,7 @@ class ACAgent:
             self.optimiser.zero_grad()
             loss.backward()
             self.optimiser.step()
-        
+        writer.flush()
         #Copy model to a new model
         # new_model = self.model.copy()
         # new_model.to(device)
