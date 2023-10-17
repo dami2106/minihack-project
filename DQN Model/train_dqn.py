@@ -13,13 +13,15 @@ import torch
 import os 
 
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+
+
+
 
 hyper_params = {
         'replay-buffer-size': int(1e6),
         'learning-rate': 1e-4,
         'discount-factor': 0.99,  # discount factor
-        'num-steps': int(10000),  # Steps to run for, max episodes should be hit before this
+        'num-steps': int(100000),  # Steps to run for, max episodes should be hit before this
         'batch-size': 32,  
         'learning-starts': 1000,  # set learning to start after 1000 steps of exploration
         'learning-freq': 1,  # Optimize after each step
@@ -30,8 +32,14 @@ hyper_params = {
         'eps-fraction': 0.8,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 69,
-        'env' : "MiniHack-MazeWalk-9x9-v0"
+        'env' : "MiniHack-Room-15x15-v0",
+        'extra-info' : "NothingExtra"
     }
+
+#Create a folder using the hyperparameters
+os.makedirs(f"Agents/{hyper_params['env']}", exist_ok=True)
+os.makedirs(f"Agents/{hyper_params['env']}/logs", exist_ok=True)
+writer = SummaryWriter(log_dir=f"Agents/{hyper_params['env']}/logs")
 
 np.random.seed(hyper_params["seed"])
 random.seed(hyper_params["seed"])
@@ -59,8 +67,8 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-1,
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
-                actions = MOVE_ACTIONS,
-                reward_manager=reward_manager
+                # actions = MOVE_ACTIONS,
+                # reward_manager=reward_manager
                 )
 
 env.seed(hyper_params["seed"])  
@@ -141,10 +149,8 @@ for t in range(hyper_params["num-steps"]):
         
 writer.flush()
 writer.close()
-# # torch.save(agent, 'best2')
-# #Load the model in 
-# agent = torch.load('best2')
+agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}.pt")
+
 for r in range(3):
-    # make_video(env, best_model, 30, 30, hyper_params["env"], 1000, f"video_{r}_best.mp4")
     env.reset()
-    make_video(env, agent, 30, 30, "videos/" + hyper_params["env"], 1000, f"video_{r}_agent.mp4")
+    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"video_{r}_{hyper_params['extra-info']}.mp4")

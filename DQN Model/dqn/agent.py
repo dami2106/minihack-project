@@ -106,3 +106,7 @@ class DQNAgent:
         result = self.policy_network.forward(state)
         action = torch.argmax(result).item()
         return action
+
+    def save_network(self, fname):
+        #Save the polciy network to a file
+        torch.save(self.policy_network.state_dict(), fname)
