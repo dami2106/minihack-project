@@ -100,6 +100,7 @@ class ACAgent:
             loss.backward()
             self.optimiser.step()
         writer.flush()
+        writer.close()
         #Copy model to a new model
         # new_model = self.model.copy()
         # new_model.to(device)
