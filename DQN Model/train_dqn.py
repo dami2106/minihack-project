@@ -21,7 +21,7 @@ hyper_params = {
         'replay-buffer-size': int(1e6),
         'learning-rate': 1e-4,
         'discount-factor': 0.99,  # discount factor
-        'num-steps': int(50000),  # Steps to run for, max episodes should be hit before this
+        'num-steps': int(10000),  # Steps to run for, max episodes should be hit before this
         'batch-size': 32,  
         'learning-starts': 1000,  # set learning to start after 1000 steps of exploration
         'learning-freq': 1,  # Optimize after each step
@@ -29,7 +29,7 @@ hyper_params = {
         'target-update-freq': 500, # number of iterations between every target network update
         'eps-start': 1.0,  # e-greedy start threshold 
         'eps-end': 0.1,  # e-greedy end threshold 
-        'eps-fraction': 0.3,  # Percentage of the time that epsilon is annealed
+        'eps-fraction': 0.5,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 69,
         'env' : "MiniHack-Room-5x5-v0",
@@ -53,9 +53,9 @@ reward_manager = RewardManager()
 
 reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
-# reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.5, terminal_required=False, terminal_sufficient=False)
+reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.1, terminal_required=False, terminal_sufficient=False)
 reward_manager.add_custom_reward_fn(distance_to_object)
-reward_manager.add_location_event("staircase down", 1.0, terminal_sufficient=True)
+reward_manager.add_location_event("staircase down", 2.0, terminal_sufficient=True)
 # reward_manager.add_custom_reward_fn(explore_cave)
 
 MOVE_ACTIONS = tuple(nethack.CompassDirection) + (
@@ -71,7 +71,7 @@ env = gym.make(hyper_params["env"],
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
                 # actions = MOVE_ACTIONS,
-                # reward_manager=reward_manager
+                reward_manager=reward_manager
                 )
 
 env.seed(hyper_params["seed"])  
@@ -116,6 +116,8 @@ for t in range(hyper_params["num-steps"]):
 
     episode_rewards[-1] += reward
     if done:
+        state = env.reset()
+        make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 100, f"train{t}_{hyper_params['extra-info']}.mp4")
         state = env.reset()
         episode_rewards.append(0.0)
     if (
@@ -166,7 +168,7 @@ env = gym.make("MiniHack-Room-Monster-5x5-v0",
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
                 # actions = MOVE_ACTIONS,
-                # reward_manager=reward_manager
+                reward_manager=reward_manager
                 )
 
 for r in range(3):
@@ -181,9 +183,9 @@ env = gym.make("MiniHack-Room-Random-5x5-v0",
             # reward_win=5,
             # seeds = hyper_params["seed"],
             # actions = MOVE_ACTIONS,
-            # reward_manager=reward_manager
+            reward_manager=reward_manager
             )
 
 for r in range(3):
     env.reset()
-    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videomons_{r}_{hyper_params['extra-info']}.mp4")
+    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videoran_{r}_{hyper_params['extra-info']}.mp4")
