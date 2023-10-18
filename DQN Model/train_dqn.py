@@ -70,8 +70,8 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-1,
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
-                actions = MOVE_ACTIONS,
-                reward_manager=reward_manager
+                # actions = MOVE_ACTIONS,
+                # reward_manager=reward_manager
                 )
 
 env.seed(hyper_params["seed"])  
@@ -158,17 +158,32 @@ for r in range(3):
     env.reset()
     make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"video_{r}_{hyper_params['extra-info']}.mp4")
 
-env = gym.make("MiniHack-LavaCross-Levitate-Ring-Inv-Full-v0",
+env = gym.make("MiniHack-Room-Monster-5x5-v0",
                 observation_keys = ['pixel', 'message', 'glyphs'],
                 # penalty_time=-0.1,
                 # penalty_step=-0.1,
                 # reward_lose=-1,
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
-                actions = MOVE_ACTIONS,
+                # actions = MOVE_ACTIONS,
                 # reward_manager=reward_manager
                 )
 
 for r in range(3):
     env.reset()
-    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videofire_{r}_{hyper_params['extra-info']}.mp4")
+    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videomons_{r}_{hyper_params['extra-info']}.mp4")
+
+env = gym.make("MiniHack-Room-Random-5x5-v0",
+            observation_keys = ['pixel', 'message', 'glyphs'],
+            # penalty_time=-0.1,
+            # penalty_step=-0.1,
+            # reward_lose=-1,
+            # reward_win=5,
+            # seeds = hyper_params["seed"],
+            # actions = MOVE_ACTIONS,
+            # reward_manager=reward_manager
+            )
+
+for r in range(3):
+    env.reset()
+    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videomons_{r}_{hyper_params['extra-info']}.mp4")
