@@ -32,8 +32,8 @@ hyper_params = {
         'eps-fraction': 0.7,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 102,
-        'env' : "MiniHack-LavaCross-Levitate-Ring-Inv-Full-v0",
-        'extra-info' : "config"
+        'env' : "MiniHack-MazeWalk-Mapped-9x9-v0",
+        'extra-info' : "plain"
     }
 
 #Create a folder using the hyperparameters
@@ -54,13 +54,13 @@ reward_manager = RewardManager()
 reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
 # reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.4, terminal_required=False, terminal_sufficient=False)
-# reward_manager.add_custom_reward_fn(distance_to_object)
+reward_manager.add_custom_reward_fn(distance_to_object)
 reward_manager.add_location_event("staircase down", 2.0)
 # reward_manager.add_custom_reward_fn(explore_cave)
 
 # reward_manager.add_message_event(["drink"], reward = 0.2, terminal_sufficient = False)
-reward_manager.add_message_event(["float"], reward = 1.0, terminal_sufficient = False)
-reward_manager.add_message_event(["stone", "wall"], reward = -0.3, terminal_sufficient = False)
+# reward_manager.add_message_event(["float"], reward = 1.0, terminal_sufficient = False)
+# reward_manager.add_message_event(["stone", "wall"], reward = -0.3, terminal_sufficient = False)
 
 # 
 MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
@@ -70,12 +70,12 @@ MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
 
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
-                # penalty_time=-0.1,
+                penalty_time=-0.1,
                 # penalty_step=-0.1,
                 # reward_lose=-2.0,
                 # reward_win=1.5,
                 # seeds = hyper_params["seed"],
-                actions =MOVE_ACTIONS, 
+                actions =  tuple(nethack.CompassDirection),
                 reward_manager=reward_manager
                 )
 
