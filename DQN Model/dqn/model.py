@@ -16,22 +16,22 @@ class DQN(nn.Module):
         """
         super().__init__()
         n_observations = observation_space.shape[0] * observation_space.shape[1]
-        self.fc = nn.Linear(n_observations, 64)
+        # self.fc = nn.Linear(n_observations, 64)
 
-        self.Tlayer = nn.TransformerEncoderLayer(d_model=64, nhead=2)
-        self.transformerE = nn.TransformerEncoder(self.Tlayer, num_layers=3)
+        # self.Tlayer = nn.TransformerEncoderLayer(d_model=64, nhead=2)
+        # self.transformerE = nn.TransformerEncoder(self.Tlayer, num_layers=3)
 
-        self.fc1 = nn.Linear(64, 32)
-        self.fc2 = nn.Linear(32, action_space.n)
+        # self.fc1 = nn.Linear(64, 32)
+        # self.fc2 = nn.Linear(32, action_space.n)
 
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
+        # for m in self.modules():
+        #     if isinstance(m, nn.Linear):
+        #         nn.init.xavier_uniform_(m.weight)
 
     # n_observations = observation_space.shape[0] * observation_space.shape[1]
-    #     self.layer1 = nn.Linear(n_observations, 512)
-    #     self.layer2 = nn.Linear(512, 128)
-    #     self.layer3 = nn.Linear(128, action_space.n)
+        self.layer1 = nn.Linear(n_observations, 512)
+        self.layer2 = nn.Linear(512, 128)
+        self.layer3 = nn.Linear(128, action_space.n)
         
         # self.conv1 = Conv2d(in_channels=1, out_channels=20,
         #     kernel_size=(5, 5))
@@ -54,16 +54,16 @@ class DQN(nn.Module):
         Returns the values of a forward pass of the network
         :param x: The input to feed into the network 
         """
-        # x = F.relu(self.layer1(x))
-        # x = F.relu(self.layer2(x))
-        # return self.layer3(x)
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        return self.layer3(x)
 
-        x = self.fc(x)
-        out = self.transformerE(x)
-        out = F.relu(self.fc1(out))
-        qvalue = self.fc2(out)
+        # x = self.fc(x)
+        # out = self.transformerE(x)
+        # out = F.relu(self.fc1(out))
+        # qvalue = self.fc2(out)
 
-        return qvalue
+        # return qvalue
 
         # # define first conv layer with max pooling
         # x = self.conv1(x)

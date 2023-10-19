@@ -36,7 +36,7 @@ def distance_to_object(env, prev_obs, action, current_obs):
 
 def normalize_glyphs(state):
     glyphs = state["glyphs"]
-    # glyphs = glyphs/glyphs.max()
+    glyphs = glyphs/glyphs.max()
     glyphs = np.array(glyphs).flatten()
 
     return torch.from_numpy(glyphs).squeeze(0)
@@ -85,7 +85,7 @@ def render(obs, screen, font, text_color):
     img = obs["pixel"]
     msg = obs["message"]
     msg = msg[: np.where(msg == 0)[0][0]].tobytes().decode("utf-8")
-    rotated_array = np.rot90(img, k=-1)
+    rotated_array = np.rot90(img, k=1)
 
     window_size = screen.get_size()
     image_surface = pygame.surfarray.make_surface(rotated_array)
