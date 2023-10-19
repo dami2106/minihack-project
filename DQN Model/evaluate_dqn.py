@@ -19,7 +19,7 @@ def act(observation, model):
 
 
 hyper_params = {
-        'env' : "MiniHack-Room-Monster-15x15-v0",
+        'env' : "MiniHack-Room-Random-5x5-v0",
         'extra-info' : "NothingExtra",
         'runs' : 10,
         'episodes' : 10
@@ -32,14 +32,14 @@ hyper_params = {
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
                 # penalty_time=-0.1,
-                penalty_step=-0.1,
+                # penalty_step=-0.1,
                 )
 
 # agent = DQN()
-agent = torch.load(f"Agents/MiniHack-Room-5x5-v0/model_NothingExtra_mlp.pt")
+agent = torch.load(f"Agents/MiniHack-Room-Random-5x5-v0/model_NothingExtra.pt")
 
 
-def run_episodes(env, agent, episodes, max_steps = 5000):
+def run_episodes(env, agent, episodes, max_steps = 1000):
     returns = []
     steps = []
 
@@ -79,10 +79,11 @@ std = np.std(runs, axis=0)
 
 #plot the mean and error 
 import matplotlib.pyplot as plt
-plt.plot(mean)
+plt.plot(mean, label="DQN MLP")
 plt.fill_between(range(len(mean)), mean-std, mean+std, alpha=0.5)
 plt.xlabel("Episode")
 plt.ylabel("Return")
+plt.ylim(-1, 1)
 plt.title(f"Mean return of {hyper_params['runs']} runs of {hyper_params['episodes']} episodes")
 plt.savefig(f"mean_return.png")
 

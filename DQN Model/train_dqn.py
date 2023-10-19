@@ -18,10 +18,10 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 hyper_params = {
-        'replay-buffer-size': int(1e6),
+        'replay-buffer-size': int(5e6),
         'learning-rate': 1e-4,
         'discount-factor': 0.99,  # discount factor
-        'num-steps': int(10000),  # Steps to run for, max episodes should be hit before this
+        'num-steps': int(30000),  # Steps to run for, max episodes should be hit before this
         'batch-size': 32,  
         'learning-starts': 500,  # set learning to start after 1000 steps of exploration
         'learning-freq': 1,  # Optimize after each step
@@ -29,11 +29,11 @@ hyper_params = {
         'target-update-freq': 100, # number of iterations between every target network update
         'eps-start': 1.0,  # e-greedy start threshold 
         'eps-end': 0.1,  # e-greedy end threshold 
-        'eps-fraction': 0.5,  # Percentage of the time that epsilon is annealed
+        'eps-fraction': 0.7,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 102,
-        'env' : "MiniHack-Room-5x5-v0",
-        'extra-info' : "NothingExtra"
+        'env' : "MiniHack-LavaCross-Levitate-Ring-Inv-Full-v0",
+        'extra-info' : "config"
     }
 
 #Create a folder using the hyperparameters
@@ -54,13 +54,13 @@ reward_manager = RewardManager()
 reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
 # reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.4, terminal_required=False, terminal_sufficient=False)
-reward_manager.add_custom_reward_fn(distance_to_object)
-reward_manager.add_location_event("staircase down", 1.0)
+# reward_manager.add_custom_reward_fn(distance_to_object)
+reward_manager.add_location_event("staircase down", 2.0)
 # reward_manager.add_custom_reward_fn(explore_cave)
 
 # reward_manager.add_message_event(["drink"], reward = 0.2, terminal_sufficient = False)
-# reward_manager.add_message_event(["float"], reward = 0.5, terminal_sufficient = False)
-# reward_manager.add_message_event(["stone", "wall"], reward = -0.3, terminal_sufficient = False)
+reward_manager.add_message_event(["float"], reward = 1.0, terminal_sufficient = False)
+reward_manager.add_message_event(["stone", "wall"], reward = -0.3, terminal_sufficient = False)
 
 # 
 MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
@@ -75,8 +75,8 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-2.0,
                 # reward_win=1.5,
                 # seeds = hyper_params["seed"],
-                # actions = tuple(nethack.CompassDirection),
-                # reward_manager=reward_manager
+                actions =MOVE_ACTIONS, 
+                reward_manager=reward_manager
                 )
 
 env.seed(hyper_params["seed"])  
@@ -130,8 +130,8 @@ for t in range(hyper_params["num-steps"]):
 
     # if(info["end_status"] == -1):
     #     reward -= 1.0
-    # if(info["end_status"] == 1):
-    #     reward -= 1.0
+    if(info["end_status"] == 1):
+        reward -= 2.0
 
     # next_state = normalize_glyphs(next_state)
     # if(info["end_status"] == 2):
@@ -156,7 +156,7 @@ for t in range(hyper_params["num-steps"]):
         and t % hyper_params["learning-freq"] == 0
     ):
         loss = agent.optimise_td_loss()
-        print("Loss: ", loss)
+        # print("Loss: ", loss)
 
     if (
         t > hyper_params["learning-starts"]
@@ -193,17 +193,17 @@ for t in range(hyper_params["num-steps"]):
         print("% time spent exploring: {}".format(int(100 * eps_threshold)))
         print("********************************************************")
 
-        if prev_mean_reward >= mean_100ep_reward:
+        if prev_mean_reward > mean_100ep_reward:
             print("Mean reward decreased ", prev_mean_reward, " -> ", mean_100ep_reward)
-            if t >= 0.1 * hyper_params["num-steps"]:
-                print("Training complete.")
-                break
+            # if t >= 0.4 * hyper_params["num-steps"]:
+            #     print("Training complete.")
+            #     break
         prev_mean_reward = mean_100ep_reward
         
 writer.flush()
 writer.close()
 agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}.pt")
 
-for r in range(1):
+for r in range(4):
     env.reset()
     make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 5000, f"video_{r}_{hyper_params['extra-info']}.mp4")
