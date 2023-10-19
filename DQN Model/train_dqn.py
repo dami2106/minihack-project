@@ -71,7 +71,7 @@ MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
                 # penalty_time=-0.1,
-                # # penalty_step=-0.1,
+                # penalty_step=-0.1,
                 # reward_lose=-2.0,
                 # reward_win=1.5,
                 # seeds = hyper_params["seed"],
@@ -204,6 +204,6 @@ writer.flush()
 writer.close()
 agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}.pt")
 
-for r in range(3):
+for r in range(1):
     env.reset()
     make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 5000, f"video_{r}_{hyper_params['extra-info']}.mp4")
