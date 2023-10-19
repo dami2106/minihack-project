@@ -10,7 +10,10 @@ import torch
 # from train_dqn import normalize_glyphs
 
 
-
+def get_msg(obs):
+    msg = obs["message"]
+    msg = msg.tobytes().decode("utf-8")
+    return msg
 
 def glyph_pos(glyphs, glyph):
     glyph_positions = np.where(np.asarray(glyphs) == glyph)

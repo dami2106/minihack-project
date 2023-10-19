@@ -5,7 +5,7 @@ import gym
 from dqn.agent import DQNAgent
 from dqn.replay_buffer import ReplayBuffer
 from dqn.wrappers import *
-from helper import make_video, normalize_glyphs, distance_to_object, explore_cave
+from helper import make_video, normalize_glyphs, distance_to_object, explore_cave, get_msg
 from nle import nethack
 from minihack import RewardManager
 import torch
@@ -32,7 +32,7 @@ hyper_params = {
         'eps-fraction': 0.5,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 69,
-        'env' : "MiniHack-Room-5x5-v0",
+        'env' : "MiniHack-LavaCross-Levitate-Potion-Inv-Full-v0",
         'extra-info' : "NothingExtra"
     }
 
@@ -53,12 +53,17 @@ reward_manager = RewardManager()
 
 reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
-reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.1, terminal_required=False, terminal_sufficient=False)
+# reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.1, terminal_required=False, terminal_sufficient=False)
 reward_manager.add_custom_reward_fn(distance_to_object)
 reward_manager.add_location_event("staircase down", 2.0, terminal_sufficient=True)
 # reward_manager.add_custom_reward_fn(explore_cave)
 
-MOVE_ACTIONS = tuple(nethack.CompassDirection) + (
+reward_manager.add_message_event(["drink"], reward = 0.2, terminal_sufficient = False)
+reward_manager.add_message_event(["float"], reward = 0.5, terminal_sufficient = False)
+reward_manager.add_message_event(["stone", "wall"], reward = -0.2, terminal_sufficient = False)
+
+# 
+MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
     nethack.Command.QUAFF,
     nethack.Command.FIRE,
 )
@@ -70,7 +75,7 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-1,
                 # reward_win=5,
                 # seeds = hyper_params["seed"],
-                # actions = MOVE_ACTIONS,
+                actions = MOVE_ACTIONS,
                 reward_manager=reward_manager
                 )
 
@@ -92,9 +97,13 @@ eps_timesteps = hyper_params["eps-fraction"] * float(hyper_params["num-steps"])
 episode_rewards = [0.0]
 
 state = env.reset() 
-
+info = ""
 
 for t in range(hyper_params["num-steps"]):
+
+
+
+
     fraction = min(1.0, float(t) / eps_timesteps)
     eps_threshold = hyper_params["eps-start"] + fraction * (
         hyper_params["eps-end"] - hyper_params["eps-start"]
@@ -107,18 +116,28 @@ for t in range(hyper_params["num-steps"]):
         action = agent.act(normalize_glyphs(state))
 
 
-    next_state, reward, done, _ = env.step(action)
+    next_state, reward, done, info = env.step(action)
     writer.add_scalar(f'DQN/{hyper_params["env"]}/Reward', reward, t)
 
+    if(info["end_status"] == -1):
+        reward -= 1.0
+    if(info["end_status"] == 1):
+        reward -= 1.0
+
     # next_state = normalize_glyphs(next_state)
+    # if(info["end_status"] == 2):
     agent.replay_buffer.add(normalize_glyphs(state), action, reward, normalize_glyphs(next_state), float(done))
+
+    
     state = next_state
 
     episode_rewards[-1] += reward
     if done:
+        print(info)
+        print("Message: ", get_msg(state))
         state = env.reset()
-        make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 100, f"train{t}_{hyper_params['extra-info']}.mp4")
-        state = env.reset()
+        # make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 100, f"train{t}_{hyper_params['extra-info']}.mp4")
+        # state = env.reset()
         episode_rewards.append(0.0)
     if (
         t > hyper_params["learning-starts"]
@@ -145,6 +164,8 @@ for t in range(hyper_params["num-steps"]):
         writer.add_scalar(f'DQN{hyper_params["env"]}//% time spent exploring', int(100 * eps_threshold), t)
 
         print("********************************************************")
+        print("Message: ", get_msg(state))
+        print("Info: ", info)
         print("steps: {}".format(t))
         print("episodes: {}".format(num_episodes))
         print("mean 100 episode reward: {}".format(mean_100ep_reward))
@@ -156,36 +177,6 @@ writer.flush()
 writer.close()
 agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}.pt")
 
-for r in range(3):
+for r in range(1):
     env.reset()
-    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"video_{r}_{hyper_params['extra-info']}.mp4")
-
-env = gym.make("MiniHack-Room-Monster-5x5-v0",
-                observation_keys = ['pixel', 'message', 'glyphs'],
-                # penalty_time=-0.1,
-                # penalty_step=-0.1,
-                # reward_lose=-1,
-                # reward_win=5,
-                # seeds = hyper_params["seed"],
-                # actions = MOVE_ACTIONS,
-                reward_manager=reward_manager
-                )
-
-for r in range(3):
-    env.reset()
-    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videomons_{r}_{hyper_params['extra-info']}.mp4")
-
-env = gym.make("MiniHack-Room-Random-5x5-v0",
-            observation_keys = ['pixel', 'message', 'glyphs'],
-            # penalty_time=-0.1,
-            # penalty_step=-0.1,
-            # reward_lose=-1,
-            # reward_win=5,
-            # seeds = hyper_params["seed"],
-            # actions = MOVE_ACTIONS,
-            reward_manager=reward_manager
-            )
-
-for r in range(3):
-    env.reset()
-    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"videoran_{r}_{hyper_params['extra-info']}.mp4")
+    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 5000, f"video_{r}_{hyper_params['extra-info']}.mp4")
