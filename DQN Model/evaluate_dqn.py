@@ -19,9 +19,10 @@ def act(observation, model):
 
 
 hyper_params = {
-        'env' : "MiniHack-Room-15x15-v0",
+        'env' : "MiniHack-Room-Monster-15x15-v0",
         'extra-info' : "NothingExtra",
-        'runs' : 10
+        'runs' : 10,
+        'episodes' : 10
     }
 
 
@@ -30,41 +31,60 @@ hyper_params = {
 
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
+                # penalty_time=-0.1,
+                penalty_step=-0.1,
                 )
 
 # agent = DQN()
 agent = torch.load(f"Agents/MiniHack-Room-5x5-v0/model_NothingExtra_mlp.pt")
 
 
-def run_episodes(env, agent, episodes):
-    
+def run_episodes(env, agent, episodes, max_steps = 5000):
+    returns = []
+    steps = []
+
+    for _ in range(episodes):
+        r = 0
+        step_ep = 0
+        state = env.reset()
+        done = False
+        while step_ep <= max_steps:
+            action = act(normalize_glyphs(state), agent)
+            state, reward, done, info = env.step(action)
+            r += reward
+            step_ep += 1
+            if done:
+                break
+
+        steps.append(step_ep)
+        returns.append(r)
+
+    return returns, steps
 
 runs = []
+step = []
 #Run 1000 times 
 for run in range(hyper_params["runs"]):
-    state = env.reset()
-    done = False
-    episode = []
-    #Each episode 
-    while True:
-        action = act(normalize_glyphs(state), agent)
-        state, reward, done, info = env.step(action)
-        episode.append(reward)
-        # print(info)
-        if done:
-            break
-    runs.append(np.sum(episode))
+    returns, steps = run_episodes(env, agent, hyper_params["episodes"])
+    runs.append(returns)
+    step.append(steps)
 
 runs = np.array(runs)
 
 
 #runs is runxepisode
-print(runs)
 
+mean = np.mean(runs, axis=0)
+std = np.std(runs, axis=0)
 
-
-#List of returns for n episodes 
-# Then have 100 lists of these returns 
+#plot the mean and error 
+import matplotlib.pyplot as plt
+plt.plot(mean)
+plt.fill_between(range(len(mean)), mean-std, mean+std, alpha=0.5)
+plt.xlabel("Episode")
+plt.ylabel("Return")
+plt.title(f"Mean return of {hyper_params['runs']} runs of {hyper_params['episodes']} episodes")
+plt.savefig(f"mean_return.png")
 
 
 
