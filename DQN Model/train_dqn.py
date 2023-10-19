@@ -70,13 +70,13 @@ MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
 
 env = gym.make(hyper_params["env"],
                 observation_keys = ['pixel', 'message', 'glyphs'],
-                penalty_time=-0.1,
+                # penalty_time=-0.1,
                 # penalty_step=-0.1,
                 # reward_lose=-2.0,
                 # reward_win=1.5,
                 # seeds = hyper_params["seed"],
-                actions =  tuple(nethack.CompassDirection),
-                reward_manager=reward_manager
+                # actions =  tuple(nethack.CompassDirection),
+                # reward_manager=reward_manager
                 )
 
 env.seed(hyper_params["seed"])  
