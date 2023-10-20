@@ -22,6 +22,21 @@ def glyph_pos(glyphs, glyph):
         return None
     return np.array([glyph_positions[0][0], glyph_positions[1][0]], dtype=np.float32)
 
+def go_right_bonus(env, prev, action, curr):
+    # Get the x coord of the @
+    glyphs = curr[env._observation_keys.index("chars")]
+    cur_pos = glyph_pos(glyphs, ord("@"))
+    prev_pos = glyph_pos(glyphs, ord("@"))
+
+    if cur_pos is None or prev_pos is None:
+        return 0
+
+    # Get the x coord of cur_pos
+    cur_x = cur_pos[1]
+    prev_x = prev_pos[1]
+
+    # return the reward for moving to the right
+    return 0.001 * (cur_x - prev_x)
 
 def distance_to_object(env, prev_obs, action, current_obs):
     glyphs = current_obs[env._observation_keys.index("chars")]
@@ -33,6 +48,51 @@ def distance_to_object(env, prev_obs, action, current_obs):
     distance = np.linalg.norm(cur_pos - staircase_pos)
     distance /= np.max(glyphs.shape)
     return -distance  
+
+def discover_maze(env, prev_obs, action, current_obs):
+    curr_chars = current_obs[env._observation_keys.index("chars")]
+    prev_chars = prev_obs[env._observation_keys.index("chars")]
+
+    curr_dots = 0
+    prev_dots = 0
+
+    for row in curr_chars:
+        for char in row:
+            if char == ord("."):
+                curr_dots += 1
+
+    for row in prev_chars:
+        for char in row:
+            if char == ord("."):
+                prev_dots += 1
+
+    if curr_dots > prev_dots:
+        return 0.1
+
+    return 0.0
+
+def discover_staircase(env, prev_obs, action, current_obs):
+    curr_chars = current_obs[env._observation_keys.index("chars")]
+    prev_chars = prev_obs[env._observation_keys.index("chars")]
+
+    curr_staircase = 0
+    prev_staircase = 0
+
+    for row in curr_chars:
+        for char in row:
+            if char == ord(">"):
+                curr_staircase += 1
+
+    for row in prev_chars:
+        for char in row:
+            if char == ord(">"):
+                prev_staircase += 1
+
+    if curr_staircase > prev_staircase:
+        return 0.5
+
+    return 0.0
+
 
 def normalize_glyphs(state):
     glyphs = state["glyphs"]

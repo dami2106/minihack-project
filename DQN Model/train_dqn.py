@@ -5,7 +5,7 @@ import gym
 from dqn.agent import DQNAgent
 from dqn.replay_buffer import ReplayBuffer
 from dqn.wrappers import *
-from helper import make_video, normalize_glyphs, distance_to_object, explore_cave, get_msg
+from helper import make_video, normalize_glyphs, distance_to_object, explore_cave, get_msg, discover_maze, discover_staircase
 from nle import nethack
 from minihack import RewardManager
 import torch
@@ -32,7 +32,7 @@ hyper_params = {
         'eps-fraction': 0.7,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 102,
-        'env' : "MiniHack-MazeWalk-Mapped-9x9-v0",
+        'env' : "MiniHack-MazeWalk-9x9-v0",
         'extra-info' : "plain"
     }
 
@@ -50,11 +50,12 @@ random.seed(hyper_params["seed"])
 # torch.backends.cudnn.benchmark = True
 
 reward_manager = RewardManager()
-
 reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
 # reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.4, terminal_required=False, terminal_sufficient=False)
-reward_manager.add_custom_reward_fn(distance_to_object)
+# reward_manager.add_custom_reward_fn(distance_to_object)
+reward_manager.add_custom_reward_fn(discover_staircase)
+reward_manager.add_custom_reward_fn(discover_maze)
 reward_manager.add_location_event("staircase down", 2.0)
 # reward_manager.add_custom_reward_fn(explore_cave)
 
@@ -75,8 +76,8 @@ env = gym.make(hyper_params["env"],
                 # reward_lose=-2.0,
                 # reward_win=1.5,
                 # seeds = hyper_params["seed"],
-                # actions =  tuple(nethack.CompassDirection),
-                # reward_manager=reward_manager
+                actions =  tuple(nethack.CompassDirection),
+                reward_manager=reward_manager
                 )
 
 env.seed(hyper_params["seed"])  
@@ -194,6 +195,7 @@ for t in range(hyper_params["num-steps"]):
         print("********************************************************")
 
         if prev_mean_reward > mean_100ep_reward:
+            agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}_{mean_100ep_reward}.pt")
             print("Mean reward decreased ", prev_mean_reward, " -> ", mean_100ep_reward)
             # if t >= 0.4 * hyper_params["num-steps"]:
             #     print("Training complete.")
