@@ -14,7 +14,7 @@ import os
 
 from torch.utils.tensorboard import SummaryWriter
 
-
+from minihack import LevelGenerator
 
 
 hyper_params = {
@@ -32,7 +32,7 @@ hyper_params = {
         'eps-fraction': 0.7,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 102,
-        'env' : "MiniHack-Quest-Hard-v0",
+        'env' : "Custom",
         'extra-info' : "plain"
     }
 
@@ -49,36 +49,62 @@ random.seed(hyper_params["seed"])
 # torch.backends.cudnn.deterministic = True
 # torch.backends.cudnn.benchmark = True
 
+# reward_manager = RewardManager()
+# reward_manager.add_eat_event("apple", reward = 1.0)
+# # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
+# # reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.4, terminal_required=False, terminal_sufficient=False)
+# # reward_manager.add_custom_reward_fn(distance_to_object)
+# reward_manager.add_custom_reward_fn(discover_quest_hard)
+# reward_manager.add_custom_reward_fn(discover_door)
+# reward_manager.add_location_event("staircase down", 2.0)
+# # reward_manager.add_custom_reward_fn(explore_cave)
+
+# # reward_manager.add_message_event(["drink"], reward = 0.2, terminal_sufficient = False)
+# # reward_manager.add_message_event(["float"], reward = 1.0, terminal_sufficient = False)
+# # reward_manager.add_message_event(["stone", "wall"], reward = -0.3, terminal_sufficient = False)
+
+# # 
+# MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
+#     nethack.Command.QUAFF,
+#     nethack.Command.FIRE,
+# )
+
+# env = gym.make(hyper_params["env"],
+#                 observation_keys = ['pixel', 'message', 'glyphs'],
+#                 # penalty_time=-0.1,
+#                 # penalty_step=-0.1,
+#                 # reward_lose=-2.0,
+#                 # reward_win=1.5,
+#                 # seeds = hyper_params["seed"],
+#                 actions =  tuple(nethack.CompassDirection),
+#                 reward_manager=reward_manager
+#                 )
+
+lvl_gen = LevelGenerator(w=4, h=4)
+lvl_gen.add_object("apple", "%", place=(3, 3))
+lvl_gen.set_start_pos((0, 1))
+
+# Define a reward manager
 reward_manager = RewardManager()
-reward_manager.add_eat_event("apple", reward = 1.0)
-# reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
-# reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.4, terminal_required=False, terminal_sufficient=False)
-# reward_manager.add_custom_reward_fn(distance_to_object)
-reward_manager.add_custom_reward_fn(discover_quest_hard)
-reward_manager.add_custom_reward_fn(discover_door)
-reward_manager.add_location_event("staircase down", 2.0)
-# reward_manager.add_custom_reward_fn(explore_cave)
+# +1 reward and termination for eating
+# an apple or wielding a dagger
+reward_manager.add_eat_event("apple", 1.0, terminal_sufficient = True)
+# reward_manager.add_message_event(["apple", "[ynq]"], reward = 0.5, repeatable = False)
 
-# reward_manager.add_message_event(["drink"], reward = 0.2, terminal_sufficient = False)
-# reward_manager.add_message_event(["float"], reward = 1.0, terminal_sufficient = False)
-# reward_manager.add_message_event(["stone", "wall"], reward = -0.3, terminal_sufficient = False)
-
-# 
-MOVE_ACTIONS =  tuple(nethack.CompassDirection) +(
-    nethack.Command.QUAFF,
-    nethack.Command.FIRE,
+MOVE_ACTIONS =  tuple(nethack.CompassDirection) + (
+    nethack.Command.EAT,
+    # nethack.Command.FIRE,
 )
 
-env = gym.make(hyper_params["env"],
-                observation_keys = ['pixel', 'message', 'glyphs'],
-                # penalty_time=-0.1,
-                # penalty_step=-0.1,
-                # reward_lose=-2.0,
-                # reward_win=1.5,
-                # seeds = hyper_params["seed"],
-                actions =  tuple(nethack.CompassDirection),
-                reward_manager=reward_manager
-                )
+
+env = gym.make(
+    "MiniHack-Skill-Custom-v0",
+    observation_keys=("glyphs", "pixel", "message"),
+    des_file=lvl_gen.get_des(),
+    reward_manager=reward_manager,
+    # actions=MOVE_ACTIONS,
+
+)
 
 env.seed(hyper_params["seed"])  
 
@@ -127,8 +153,8 @@ for t in range(hyper_params["num-steps"]):
 
     # if(info["end_status"] == -1):
     #     reward -= 1.0
-    if(info["end_status"] == 1):
-        reward -= 2.0
+    # if(info["end_status"] == 1):
+    #     reward -= 2.0
 
     # next_state = normalize_glyphs(next_state)
     # if(info["end_status"] == 2):
