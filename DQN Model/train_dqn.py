@@ -5,7 +5,7 @@ import gym
 from dqn.agent import DQNAgent
 from dqn.replay_buffer import ReplayBuffer
 from dqn.wrappers import *
-from helper import make_video, normalize_glyphs, distance_to_object, explore_cave, get_msg, discover_maze, discover_staircase
+from helper import make_video, normalize_glyphs, distance_to_object, explore_cave, get_msg, discover_maze, discover_staircase, discover_quest_hard, discover_door
 from nle import nethack
 from minihack import RewardManager
 import torch
@@ -32,7 +32,7 @@ hyper_params = {
         'eps-fraction': 0.7,  # Percentage of the time that epsilon is annealed
         'print-freq': 10,
         'seed' : 102,
-        'env' : "MiniHack-MazeWalk-9x9-v0",
+        'env' : "MiniHack-Quest-Hard-v0",
         'extra-info' : "plain"
     }
 
@@ -54,8 +54,8 @@ reward_manager.add_eat_event("apple", reward = 1.0)
 # reward_manager.add_message_event(["key", "Key"], reward = 1.0, terminal_sufficient=True)
 # reward_manager.add_message_event(["fixed", "wall", "stone", "Stone", "solid"], reward = -0.4, terminal_required=False, terminal_sufficient=False)
 # reward_manager.add_custom_reward_fn(distance_to_object)
-reward_manager.add_custom_reward_fn(discover_staircase)
-reward_manager.add_custom_reward_fn(discover_maze)
+reward_manager.add_custom_reward_fn(discover_quest_hard)
+reward_manager.add_custom_reward_fn(discover_door)
 reward_manager.add_location_event("staircase down", 2.0)
 # reward_manager.add_custom_reward_fn(explore_cave)
 
@@ -104,10 +104,6 @@ prev_action = -1
 prev_mean_reward = np.inf
 
 for t in range(hyper_params["num-steps"]):
-
-
-
-
     fraction = min(1.0, float(t) / eps_timesteps)
     eps_threshold = hyper_params["eps-start"] + fraction * (
         hyper_params["eps-end"] - hyper_params["eps-start"]

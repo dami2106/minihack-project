@@ -71,6 +71,50 @@ def discover_maze(env, prev_obs, action, current_obs):
 
     return 0.0
 
+def discover_quest_hard(env, prev_obs, action, current_obs):
+    curr_chars = current_obs[env._observation_keys.index("chars")]
+    prev_chars = prev_obs[env._observation_keys.index("chars")]
+
+    curr_dots = 0
+    prev_dots = 0
+
+    for row in curr_chars:
+        for char in row:
+            if char == ord("#"):
+                curr_dots += 1
+
+    for row in prev_chars:
+        for char in row:
+            if char == ord("#"):
+                prev_dots += 1
+
+    if curr_dots > prev_dots:
+        return 0.1
+
+    return 0.0
+
+def discover_door(env, prev_obs, action, current_obs):
+    curr_chars = current_obs[env._observation_keys.index("chars")]
+    prev_chars = prev_obs[env._observation_keys.index("chars")]
+
+    curr_dots = 0
+    prev_dots = 0
+
+    for row in curr_chars:
+        for char in row:
+            if char == ord("+"):
+                curr_dots += 1
+
+    for row in prev_chars:
+        for char in row:
+            if char == ord("+"):
+                prev_dots += 1
+
+    if curr_dots > prev_dots:
+        return 0.1
+
+    return 0.0
+
 def discover_staircase(env, prev_obs, action, current_obs):
     curr_chars = current_obs[env._observation_keys.index("chars")]
     prev_chars = prev_obs[env._observation_keys.index("chars")]
