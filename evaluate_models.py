@@ -8,6 +8,9 @@ import numpy as np
 from nle import nethack
 from minihack import RewardManager
 from tqdm import tqdm
+
+from environment_manager import setup_environment
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -37,7 +40,7 @@ class A2C:
         best_action = torch.distributions.Categorical(act).sample()
         return best_action.item()
 
-def run_episodes(env, agent, episodes, max_steps = 2000):
+def run_episodes(env, agent, episodes, max_steps = 1000):
     returns = []
     steps = []
 
@@ -65,23 +68,14 @@ def run_episodes(env, agent, episodes, max_steps = 2000):
 #MiniHack-Skill-Custom-v0 = Apple Environment 
 
 hyper_params = {
-        'env' : "MiniHack-Room-5x5-v0", #Name of folder in  runs folder
-        'type' : "plain",   #config or plain 
+        'env' : "MiniHack-MazeWalk-9x9-v0", #Name of folder in  runs folder
+        'type' : "config",   #config or plain 
         'runs' : 10,    #Number of times to run set of episodes
         'episodes' : 100 #Number of episodes to run
     }
 
+env = setup_environment(hyper_params["env"], hyper_params["type"])
 
-if hyper_params["type"] == "plain":
-    env = gym.make(hyper_params["env"], observation_keys = ['pixel', 'message', 'glyphs'])
-
-else :
-    reward_manager = RewardManager()
-    ACTIONS = tuple(nethack.CompassDirection)
-    env = gym.make(hyper_params["env"], 
-                   observation_keys = ['pixel', 'message', 'glyphs'],
-                   actions = ACTIONS,
-                   reward_manager = reward_manager)
     
 
 dqn_agent = DQN(torch.load(f"Saved_Runs/{hyper_params['env']}/DQN/DQN_{hyper_params['type']}.pt"))
