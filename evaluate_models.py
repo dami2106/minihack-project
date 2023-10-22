@@ -7,6 +7,7 @@ from a2c.helper import get_observation
 import numpy as np
 from nle import nethack
 from minihack import RewardManager
+from tqdm import tqdm
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -65,9 +66,9 @@ def run_episodes(env, agent, episodes, max_steps = 2000):
 
 hyper_params = {
         'env' : "MiniHack-Room-5x5-v0", #Name of folder in  runs folder
-        'type' : "config",   #config or plain 
-        'runs' : 2,    #Number of times to run set of episodes
-        'episodes' : 2 #Number of episodes to run
+        'type' : "plain",   #config or plain 
+        'runs' : 10,    #Number of times to run set of episodes
+        'episodes' : 100 #Number of episodes to run
     }
 
 
@@ -93,7 +94,7 @@ for i in range(2):
     runs = []
     step = []
     #
-    for run in range(hyper_params["runs"]):
+    for run in tqdm(range(hyper_params["runs"])):
         returns, steps = run_episodes(env, agent, hyper_params["episodes"])
         runs.append(returns)
         step.append(steps)
