@@ -59,53 +59,65 @@ class DQNAgent:
         Optimise the TD-error over a single minibatch of transitions
         :return: the loss
         """
-        states, actions, rewards, next_states, dones = self.replay_buffer.sample(self.batch_size)
-        states = np.array(states)
-        next_states = np.array(next_states)
-        states = torch.from_numpy(states).float().to(device)
-        actions = torch.from_numpy(actions).long().to(device)
-        rewards = torch.from_numpy(rewards).float().to(device)
-        next_states = torch.from_numpy(next_states).float().to(device)
-        dones = torch.from_numpy(dones).float().to(device)
 
-        with torch.no_grad():
+        state_set, action_set, reward_set, next_state_set, done_set = self.replay_buffer.sample(self.batch_size)
+
+        #Need to convert the numpy arrays to tensors
+        state_set = torch.from_numpy(state_set).float().to(device)
+        next_state_set = torch.from_numpy(next_state_set).float().to(device)
+
+        reward_set = torch.from_numpy(reward_set).float().to(device)
+        action_set = torch.from_numpy(action_set).long().to(device)
+        done_set = torch.from_numpy(done_set).float().to(device)
+        
+        
+        #Need to calculate TD error 
+        with torch.no_grad(): #Need to use no grad because we don't want to train the target network
             if self.use_double_dqn:
-                _, max_next_action = self.policy_network(next_states).max(1)
-                max_next_q_values = self.target_network(next_states).gather(1, max_next_action.unsqueeze(1)).squeeze()
+                #Need to use the policy network to select the best action
+                next_state_q_values = self.policy_network(next_state_set)
+                next_state_best_actions = torch.argmax(next_state_q_values, dim=1)
+                #Need to use the target network to get the q values for the best actions
+                next_state_q_values = self.target_network(next_state_set)
+                next_state_q_values = next_state_q_values.gather(1, next_state_best_actions.unsqueeze(1)).squeeze(1)
             else:
-                next_q_values = self.policy_network(next_states)
-                max_next_q_values, _ = next_q_values.max(1)
-            target_q_values = rewards + (1 - dones) * self.gamma * max_next_q_values
+                #Need to use the target network to get the q values for the best actions
+                next_state_q_values = self.target_network(next_state_set)
+                next_state_q_values = torch.max(next_state_q_values, dim=1).values
 
-        input_q_values = self.target_network(states)
-        input_q_values = input_q_values.gather(1, actions.unsqueeze(1)).squeeze()
+            final_q = reward_set + (self.gamma * next_state_q_values * (1 - done_set))
+
+        #Need to get the q values for the actions taken
+        q_values = self.policy_network(state_set)
+        q_values = q_values.gather(1, action_set.unsqueeze(1)).squeeze(1)
 
         # loss = F.smooth_l1_loss(input_q_values, target_q_values)
-        loss = F.mse_loss(input_q_values, target_q_values)
+        loss = F.mse_loss(q_values, final_q)
 
         self.optimiser.zero_grad()
         loss.backward()
         self.optimiser.step()
-        del states
-        del next_states
+        
         return loss.item()
 
     def update_target_network(self):
         """
         Update the target Q-network by copying the weights from the current Q-network
         """
+        #Need to copy the weights from the policy network to the target network (backup)
         self.target_network.load_state_dict(self.policy_network.state_dict())
 
     def act(self, observation):
         """Select action base on network inference"""
-        if not torch.cuda.is_available():
-            observation = observation.type(torch.FloatTensor) 
-        else:
-            observation = observation.type(torch.cuda.FloatTensor) 
-        state = torch.unsqueeze(observation, 0).to(device)
-        result = self.policy_network.forward(state)
-        action = torch.argmax(result).item()
-        return action
+
+        #Need to convert the tensor to floats onto the gpu
+        state = observation.float().unsqueeze(0).to(device)
+
+        #Need to get the q values for the state and select the best action (argmax)
+        #Need to use no grad because we don't want to train the policy network
+        with torch.no_grad():
+            result = self.policy_network.forward(state)
+            return torch.argmax(result).item()
 
     def save_network(self, fname):
         #Save the polciy network to a file

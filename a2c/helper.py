@@ -9,17 +9,20 @@ from pygame.locals import *
 import torch
 # from train_dqn import normalize_glyphs
 
+#A function that normalizes the glyps values and reshapes them into format for the CNN
 def normalize_glyphs(state):
     glyphs = state["glyphs"]
     glyphs = glyphs/glyphs.max()
     return glyphs.reshape((1,1,21,79))
 
+#A fucntion to get the numeric value of a message and normalise it to be between 0 and 1
 def normalize_messages(state):
     message = state["message"]
     if message.max() != 0:
         message = message/message.max()
     return message.reshape((1,len(message)))
 
+#A function to get the observation from the state as a dictionary as it is in the observation space
 def get_observation(state):
     glyphs = normalize_glyphs(state)
     message = normalize_messages(state)

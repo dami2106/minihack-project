@@ -9,16 +9,14 @@ import torch.nn.functional as F
 from a2c.helper import get_observation
 
 import torch
-from torch.utils.tensorboard import SummaryWriter
 
-device = torch.device("cuda")
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 class ACAgent:
     def __init__(
         self,
         observation_space: spaces.Box,
         action_space: spaces.Discrete,
-        use_double_dqn,
         lr,
         batch_size,
         gamma,
@@ -29,8 +27,6 @@ class ACAgent:
 
         self.observation_space = observation_space
         self.action_space = action_space
-        # self.replay_buffer = replay_buffer
-        self.use_double_dqn = use_double_dqn
         self.lr = lr
         self.batch_size = batch_size
         self.gamma = gamma
@@ -43,7 +39,6 @@ class ACAgent:
         self.optimiser = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         self.score = []
-        writer = SummaryWriter()
 
         for ep in range(max_episodes):
             
@@ -85,9 +80,6 @@ class ACAgent:
                 if done:
                     break
 
-            #Update the model using the loss etc
-
-            # episode_score = sum(episode_metrics["reward"])
             episode_return = self.calc_return(episode_metrics["reward"])
 
             self.score.append(np.sum(episode_metrics["reward"]))
@@ -99,13 +91,7 @@ class ACAgent:
             self.optimiser.zero_grad()
             loss.backward()
             self.optimiser.step()
-        writer.flush()
-        writer.close()
-        #Copy model to a new model
-        # new_model = self.model.copy()
-        # new_model.to(device)
-        # return new_model
-        # return self.model
+
 
     def get_loss(self, actor_values, critic_values, rewards):
         loss = 0
@@ -140,3 +126,6 @@ class ACAgent:
         act, _ = self.model.forward(state)
         best_action = torch.distributions.Categorical(act).sample()
         return best_action.item()
+    
+    def save_network(self, path):
+        torch.save(self.model, path)

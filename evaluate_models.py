@@ -14,6 +14,7 @@ from environment_manager import setup_environment
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+#DQN class to manage the DQN model and agent
 class DQN:
     def __init__(self, model):
         self.model = model
@@ -30,6 +31,7 @@ class DQN:
         action = torch.argmax(result).item()
         return action
     
+#A2C class to manage the A2C model and agent
 class A2C:
     def __init__(self, model):
         self.model = model
@@ -40,6 +42,7 @@ class A2C:
         best_action = torch.distributions.Categorical(act).sample()
         return best_action.item()
 
+#A function that collects the average return over N episodes for max time steps 1000
 def run_episodes(env, agent, episodes, max_steps = 1000):
     returns = []
     steps = []
@@ -65,29 +68,26 @@ def run_episodes(env, agent, episodes, max_steps = 1000):
 
     return returns, steps
 
-#MiniHack-Skill-Custom-v0 = Apple Environment 
-
+#Setup the testing env
 hyper_params = {
         'env' : "MiniHack-MazeWalk-9x9-v0", #Name of folder in  runs folder
         'type' : "config",   #config or plain 
         'runs' : 10,    #Number of times to run set of episodes
         'episodes' : 100 #Number of episodes to run
     }
-
 env = setup_environment(hyper_params["env"], hyper_params["type"])
 
-    
-
+#Load the saved models in
 dqn_agent = DQN(torch.load(f"Saved_Runs/{hyper_params['env']}/DQN/DQN_{hyper_params['type']}.pt"))
 a2c_agent = A2C(torch.load(f"Saved_Runs/{hyper_params['env']}/A2C/A2C_{hyper_params['type']}.pt"))
 
-agent = a2c_agent
-for i in range(1):
-    # agent = dqn_agent if i == 0 else a2c_agent
+
+#A a loop to evaluate both models and collect the steps, returns etc for each run as well as the variance
+for i in range(2):
+    agent = dqn_agent if i == 0 else a2c_agent
 
     runs = []
     step = []
-    #
     for run in tqdm(range(hyper_params["runs"])):
         returns, steps = run_episodes(env, agent, hyper_params["episodes"])
         runs.append(returns)
@@ -111,10 +111,10 @@ for i in range(1):
 
     agent_data = np.array(agent_data)
 
-    # if i == 0:
-    #     np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_DQN.npy", agent_data)
-    # else:
-    np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_A2C.npy", agent_data)
+    if i == 0:
+        np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_DQN.npy", agent_data)
+    else:
+        np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_A2C.npy", agent_data)
 
 
 

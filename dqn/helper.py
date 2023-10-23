@@ -1,143 +1,20 @@
 from pathlib import Path
-import gym
 import pygame
 import numpy as np
-import cv2  # OpenCV for video creation
+import cv2  
 import os
 import minihack
 from pygame.locals import *
 import torch
-# from train_dqn import normalize_glyphs
+
+"""
+This is a helper file that contains custom reward functions,
+as well as video and visualise function
+"""
 
 
-def get_msg(obs):
-    msg = obs["message"]
-    msg = msg.tobytes().decode("utf-8")
-    return msg
 
-def glyph_pos(glyphs, glyph):
-    glyph_positions = np.where(np.asarray(glyphs) == glyph)
-    assert len(glyph_positions) == 2
-    if glyph_positions[0].shape[0] == 0:
-        return None
-    return np.array([glyph_positions[0][0], glyph_positions[1][0]], dtype=np.float32)
-
-def go_right_bonus(env, prev, action, curr):
-    # Get the x coord of the @
-    glyphs = curr[env._observation_keys.index("chars")]
-    cur_pos = glyph_pos(glyphs, ord("@"))
-    prev_pos = glyph_pos(glyphs, ord("@"))
-
-    if cur_pos is None or prev_pos is None:
-        return 0
-
-    # Get the x coord of cur_pos
-    cur_x = cur_pos[1]
-    prev_x = prev_pos[1]
-
-    # return the reward for moving to the right
-    return 0.001 * (cur_x - prev_x)
-
-def distance_to_object(env, prev_obs, action, current_obs):
-    glyphs = current_obs[env._observation_keys.index("chars")]
-    cur_pos = glyph_pos(glyphs, ord("@"))
-    staircase_pos = glyph_pos(glyphs, ord(">"))
-    if staircase_pos is None:
-        # Staircase has been reached
-        return 0.0
-    distance = np.linalg.norm(cur_pos - staircase_pos)
-    distance /= np.max(glyphs.shape)
-    return -distance  
-
-def discover_maze(env, prev_obs, action, current_obs):
-    curr_chars = current_obs[env._observation_keys.index("chars")]
-    prev_chars = prev_obs[env._observation_keys.index("chars")]
-
-    curr_dots = 0
-    prev_dots = 0
-
-    for row in curr_chars:
-        for char in row:
-            if char == ord("."):
-                curr_dots += 1
-
-    for row in prev_chars:
-        for char in row:
-            if char == ord("."):
-                prev_dots += 1
-
-    if curr_dots > prev_dots:
-        return 0.1
-
-    return 0.0
-
-def discover_quest_hard(env, prev_obs, action, current_obs):
-    curr_chars = current_obs[env._observation_keys.index("chars")]
-    prev_chars = prev_obs[env._observation_keys.index("chars")]
-
-    curr_dots = 0
-    prev_dots = 0
-
-    for row in curr_chars:
-        for char in row:
-            if char == ord("#"):
-                curr_dots += 1
-
-    for row in prev_chars:
-        for char in row:
-            if char == ord("#"):
-                prev_dots += 1
-
-    if curr_dots > prev_dots:
-        return 0.1
-
-    return 0.0
-
-def discover_door(env, prev_obs, action, current_obs):
-    curr_chars = current_obs[env._observation_keys.index("chars")]
-    prev_chars = prev_obs[env._observation_keys.index("chars")]
-
-    curr_dots = 0
-    prev_dots = 0
-
-    for row in curr_chars:
-        for char in row:
-            if char == ord("+"):
-                curr_dots += 1
-
-    for row in prev_chars:
-        for char in row:
-            if char == ord("+"):
-                prev_dots += 1
-
-    if curr_dots > prev_dots:
-        return 0.1
-
-    return 0.0
-
-def discover_staircase(env, prev_obs, action, current_obs):
-    curr_chars = current_obs[env._observation_keys.index("chars")]
-    prev_chars = prev_obs[env._observation_keys.index("chars")]
-
-    curr_staircase = 0
-    prev_staircase = 0
-
-    for row in curr_chars:
-        for char in row:
-            if char == ord(">"):
-                curr_staircase += 1
-
-    for row in prev_chars:
-        for char in row:
-            if char == ord(">"):
-                prev_staircase += 1
-
-    if curr_staircase > prev_staircase:
-        return 0.5
-
-    return 0.0
-
-
+#A function that normalizes the glyphs of the observation and flattens then to be used in an MLP
 def normalize_glyphs(state):
     glyphs = state["glyphs"]
     glyphs = glyphs/glyphs.max()
@@ -158,23 +35,7 @@ def scale_observation(observation, new_size):
     """
     return pygame.transform.scale(observation, new_size)
 
-def explore_cave(env, prev_obs, action, current_obs):
-    chars = current_obs[env._observation_keys.index("chars")]
-    curr_dots = 0
-    prev_dots = 0
-    for row in chars:
-        for char in row:
-            if char == ord("."):
-                curr_dots += 1
-    chars = prev_obs[env._observation_keys.index("chars")]
-    for row in chars:
-        for char in row:
-            if char == ord("."):
-                prev_dots += 1
-    
-    if curr_dots > prev_dots:
-        return 0.8
-    return 0.0
+
 
 # Function to render the game observation
 def render(obs, screen, font, text_color):

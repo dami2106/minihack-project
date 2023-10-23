@@ -1,22 +1,13 @@
 import random
 import numpy as np
-import gym
-
 from dqn.agent import DQNAgent
 from dqn.replay_buffer import ReplayBuffer
-from dqn.wrappers import *
-from dqn.helper import make_video, normalize_glyphs, distance_to_object, explore_cave, get_msg, discover_maze, discover_staircase, discover_quest_hard, discover_door
-from nle import nethack
-from minihack import RewardManager
-import torch
-
+from dqn.helper import make_video, normalize_glyphs, get_msg
 from environment_manager import setup_environment
-
 import os 
 
-from minihack import LevelGenerator
 
-
+#Hyper paremeters for the DQN network. Set the env and the extra info to config or plain
 hyper_params = {
         'replay-buffer-size': int(5e6),
         'learning-rate': 1e-4,
@@ -36,20 +27,18 @@ hyper_params = {
         'extra-info' : "config"  #config or plain
     }
 
-#Create a folder using the hyperparameters
+#Create a folder using the hyperparameters (This just stores the model and the videos)
 os.makedirs(f"Agents/{hyper_params['env']}", exist_ok=True)
-os.makedirs(f"Agents/{hyper_params['env']}/logs", exist_ok=True)
-
 
 np.random.seed(hyper_params["seed"])
 random.seed(hyper_params["seed"])
 
+#Use our environment manager to setup the environment
 env = setup_environment(hyper_params["env"], hyper_params["extra-info"])
-
 env.seed(hyper_params["seed"])  
 
+#Setup the DQN agent
 replay_buffer = ReplayBuffer(hyper_params["replay-buffer-size"])
-
 agent = DQNAgent(
     env.observation_space["glyphs"],
     env.action_space,
@@ -60,13 +49,14 @@ agent = DQNAgent(
     hyper_params["discount-factor"]
 )
 
+#Metrics for the agent
 eps_timesteps = hyper_params["eps-fraction"] * float(hyper_params["num-steps"])
 episode_rewards = [0.0]
-
 state = env.reset() 
 info = ""
 prev_mean_reward = np.inf
 
+#Training loop
 for t in range(hyper_params["num-steps"]):
     fraction = min(1.0, float(t) / eps_timesteps)
     eps_threshold = hyper_params["eps-start"] + fraction * (
@@ -124,13 +114,11 @@ for t in range(hyper_params["num-steps"]):
         if prev_mean_reward > mean_100ep_reward:
             agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}_{mean_100ep_reward}.pt")
             print("Mean reward decreased ", prev_mean_reward, " -> ", mean_100ep_reward)
-            # if t >= 0.4 * hyper_params["num-steps"]:
-            #     print("Training complete.")
-            #     break
         prev_mean_reward = mean_100ep_reward
 
+#Save the model to disk
 agent.save_network(f"Agents/{hyper_params['env']}/model_{hyper_params['extra-info']}.pt")
 
-for r in range(4):
-    env.reset()
-    make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 5000, f"video_{r}_{hyper_params['extra-info']}.mp4")
+#Generate a video of the environemtn using the agent
+env.reset()
+make_video(env, agent, 30, 30, f"Agents/{hyper_params['env']}/Videos", 1000, f"dqn_video_{hyper_params['env']}_{hyper_params['extra-info']}.mp4")

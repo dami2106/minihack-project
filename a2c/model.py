@@ -10,16 +10,15 @@ from a2c.helper import get_observation
 
 class AdvantageActorCritic(nn.Module):
     """
-    A basic implementation of a Deep Q-Network.
+    A basic implementation of a Deep Q-Network - using 2 networks and combiniing them into one 
+    to estimate the action probabilities and the state value function
+    Using the network proposed by https://github.com/BrentonBudler/deep-rl-minihack-the-planet/blob/main/A2C.ipynb 
     """
 
     def __init__(self, observation_space, action_space: spaces.Discrete):
-        """
-        Initialise the DQN
-        :param action_space: the action space of the environment
-        """
         super().__init__()
 
+        #Standard Convolutional and pooling layers for glyphs input
         self.conv1 = Conv2d(in_channels=1, out_channels=20,
                             kernel_size=(5, 5))
         self.relu1 = ReLU()
@@ -38,7 +37,6 @@ class AdvantageActorCritic(nn.Module):
         self.relu4 = ReLU()
 
         #Was a normal DQN until here 
-        
         
         # Initialize fully connected for message input 
         self.fc3 = Linear(in_features=256, out_features=128)
@@ -61,13 +59,11 @@ class AdvantageActorCritic(nn.Module):
         Returns the values of a forward pass of the network
         :param x: The input to feed into the network 
         """
-        
-        #TODO Need to normalize the glyphs and message
-        # x = get_observation(x)
+ 
         raw_glyphs = x["glyphs"]
         raw_message = x["message"]
 
-
+        #Get tensors for the arrays
         glyphs_tensor  = torch.from_numpy(raw_glyphs).float().to(device)
         message_tensor  = torch.from_numpy(raw_message).float().to(device)
 
@@ -89,23 +85,11 @@ class AdvantageActorCritic(nn.Module):
         # Pass the message input through a fully connected layer
         message_tensor = self.fc3(message_tensor)
         message_tensor = self.relu5(message_tensor)
-        
-        # Combine glyphs output from convolution and fully connected layers 
-        # with message output from fully connected layer 
-        # Cat and Concat are used for different versions of PyTorch
-        # try:
-        #     combined = torch.cat((glyphs_tensor,message_t),1)
-        # except:
-        combined = torch.concat([glyphs_tensor,message_tensor],1)
 
-        # Pass glyphs and messaged combination through a fully connected layer
+        #Combine the two outputs for the final layers in the network
+        combined = torch.concat([glyphs_tensor,message_tensor],1)
         combined = self.fc4(combined)
         combined = self.relu6(combined)
-        
-        # Pass the output from the previous fully connected layer through two seperate 
-        # fully connected layers, one with a single output neuron (to estimate the state value function)
-        # and the other with the number of output neurons equal to the number of actions 
-        # (to estimate the action probabilities)
         state_value = self.value_layer(glyphs_tensor)
         action_probs = self.softmax(self.action_layer(glyphs_tensor))
 
