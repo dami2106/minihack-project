@@ -4,7 +4,7 @@ import seaborn as sns
 
 hyper_params = {
         'env' : "MiniHack-Quest-Hard-v0", #Name of folder in  runs folder
-        'type' : "plain",   #config or plain 
+        'type' : "config",   #config or plain 
 }
 
 #Load the results in from the saved NPY files
@@ -27,14 +27,14 @@ sns.set_theme()
 sns.set_style("darkgrid")
 
 #Plot the returns for each model
-plt.plot(dqn_mean_runs, label="DQN", color="blue", linewidth=3)
+plt.plot(dqn_mean_runs, label="DQN", color="blue")
 plt.plot(a2c_mean_runs, label="A2C", color="red")
 plt.fill_between(range(len(dqn_mean_runs)), dqn_mean_runs-dqn_var_runs, dqn_mean_runs+dqn_var_runs, alpha=0.3, color="blue")
 plt.fill_between(range(len(a2c_mean_runs)), a2c_mean_runs-a2c_var_runs, a2c_mean_runs+a2c_var_runs, alpha=0.3, color="red")
 
 plt.xlabel("Episode")
 plt.ylabel("Return")
-plt.ylim(-20, 10)
+plt.ylim(-22, 15)
 
 if hyper_params["type"] == 'plain':
     plt.title(f"Mean return of DQN and A2C on {hyper_params['env']}\nwith no custom rewards or actions ")
