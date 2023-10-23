@@ -81,9 +81,9 @@ env = setup_environment(hyper_params["env"], hyper_params["type"])
 dqn_agent = DQN(torch.load(f"Saved_Runs/{hyper_params['env']}/DQN/DQN_{hyper_params['type']}.pt"))
 a2c_agent = A2C(torch.load(f"Saved_Runs/{hyper_params['env']}/A2C/A2C_{hyper_params['type']}.pt"))
 
-
-for i in range(2):
-    agent = dqn_agent if i == 0 else a2c_agent
+agent = a2c_agent
+for i in range(1):
+    # agent = dqn_agent if i == 0 else a2c_agent
 
     runs = []
     step = []
@@ -111,22 +111,13 @@ for i in range(2):
 
     agent_data = np.array(agent_data)
 
-    if i == 0:
-        np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_DQN.npy", agent_data)
-    else:
-        np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_A2C.npy", agent_data)
+    # if i == 0:
+    #     np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_DQN.npy", agent_data)
+    # else:
+    np.save(f"Saved_Runs/{hyper_params['env']}/{hyper_params['type']}_A2C.npy", agent_data)
 
 
 
-# #plot the mean and error 
-# import matplotlib.pyplot as plt
-# plt.plot(mean, label="DQN MLP")
-# plt.fill_between(range(len(mean)), mean-std, mean+std, alpha=0.5)
-# plt.xlabel("Episode")
-# plt.ylabel("Return")
-# plt.ylim(-1, 1)
-# plt.title(f"Mean return of {hyper_params['runs']} runs of {hyper_params['episodes']} episodes")
-# plt.savefig(f"mean_return.png")
 
 
 
