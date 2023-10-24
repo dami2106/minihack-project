@@ -18,7 +18,6 @@ class ACAgent:
         observation_space: spaces.Box,
         action_space: spaces.Discrete,
         lr,
-        batch_size,
         gamma,
         max_episode_length,
         max_episodes,
@@ -28,7 +27,6 @@ class ACAgent:
         self.observation_space = observation_space
         self.action_space = action_space
         self.lr = lr
-        self.batch_size = batch_size
         self.gamma = gamma
         self.model = AdvantageActorCritic(env.observation_space, env.action_space)
         self.model.to(device)

@@ -9,7 +9,6 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 hyper_params = {
         'learning-rate': 0.01,
         'discount-factor': 0.99,  # discount factor
-        'batch-size': 32,  
         'max_episode_length' : 100,
         'max_episodes' : 100,
         'seed' : 102,
@@ -26,7 +25,6 @@ ac = ACAgent(
     observation_space = env.observation_space,
     action_space = env.action_space,
     lr = hyper_params["learning-rate"],
-    batch_size = hyper_params["batch-size"],
     gamma = hyper_params["discount-factor"],
     max_episode_length = hyper_params["max_episode_length"],
     max_episodes = hyper_params["max_episodes"],
