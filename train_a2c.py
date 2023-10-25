@@ -9,8 +9,8 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 hyper_params = {
         'learning-rate': 0.01,
         'discount-factor': 0.99,  # discount factor
-        'max_episode_length' : 100,
-        'max_episodes' : 100,
+        'max-episode-length' : 100,
+        'max-episodes' : 100,
         'seed' : 102,
         'env' : "MiniHack-Room-5x5-v0",
         'extra-info' : "config"  #config or plain
@@ -26,8 +26,8 @@ ac = ACAgent(
     action_space = env.action_space,
     lr = hyper_params["learning-rate"],
     gamma = hyper_params["discount-factor"],
-    max_episode_length = hyper_params["max_episode_length"],
-    max_episodes = hyper_params["max_episodes"],
+    max_episode_length = hyper_params["max-episode-length"],
+    max_episodes = hyper_params["max-episodes"],
     env = env
 )
 
