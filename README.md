@@ -1,4 +1,4 @@
-# MiniHack The Planet Project
+# Project: MiniHack The Planet 
 ## Code done by Damion, Michaela, Gavin
 
 ### How to run the code:
