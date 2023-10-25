@@ -12,8 +12,8 @@ hyper_params = {
         'max_episode_length' : 100,
         'max_episodes' : 100,
         'seed' : 102,
-        'env' : "MiniHack_Room_5x5_v0",
-        'extra_info' : "config"  #config or plain
+        'env' : "MiniHack-Room-5x5-v0",
+        'extra_info' : "plain"  #config or plain
     }
 
 #Create an environment using the environemnt manager

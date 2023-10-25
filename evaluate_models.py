@@ -70,7 +70,7 @@ def run_episodes(env, agent, episodes, max_steps = 1000):
 
 #Setup the testing env
 hyper_params = {
-        'env' : "MiniHack-MazeWalk-9x9-v0", #Name of folder in  runs folder
+        'env' : "MiniHack-Room-5x5-v0", #Name of folder in  runs folder
         'type' : "config",   #config or plain 
         'runs' : 10,    #Number of times to run set of episodes
         'episodes' : 100 #Number of episodes to run
@@ -81,10 +81,11 @@ env = setup_environment(hyper_params["env"], hyper_params["type"])
 dqn_agent = DQN(torch.load(f"Saved_Runs/{hyper_params['env']}/DQN/DQN_{hyper_params['type']}.pt"))
 a2c_agent = A2C(torch.load(f"Saved_Runs/{hyper_params['env']}/A2C/A2C_{hyper_params['type']}.pt"))
 
+agent = dqn_agent
 
 #A a loop to evaluate both models and collect the steps, returns etc for each run as well as the variance
-for i in range(2):
-    agent = dqn_agent if i == 0 else a2c_agent
+for i in range(1):
+    # agent = dqn_agent if i == 0 else a2c_agent
 
     runs = []
     step = []

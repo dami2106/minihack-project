@@ -3,7 +3,7 @@ import numpy as np
 import seaborn as sns
 
 hyper_params = {
-        'env' : "MiniHack-Quest-Hard-v0", #Name of folder in  runs folder
+        'env' : "MiniHack-Room-5x5-v0", #Name of folder in  runs folder
         'type' : "config",   #config or plain 
 }
 
@@ -34,7 +34,7 @@ plt.fill_between(range(len(a2c_mean_runs)), a2c_mean_runs-a2c_var_runs, a2c_mean
 
 plt.xlabel("Episode")
 plt.ylabel("Return")
-plt.ylim(-22, 15)
+plt.ylim(-6, 6)
 
 if hyper_params["type"] == 'plain':
     plt.title(f"Mean return of DQN and A2C on {hyper_params['env']}\nwith no custom rewards or actions ")

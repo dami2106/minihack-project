@@ -2,8 +2,8 @@ import random
 import numpy as np
 from dqn.agent import DQNAgent
 from dqn.replay_buffer import ReplayBuffer
-from dqn.helper import make_video, normalize_glyphs, get_msg
-from environment_manager import setup_environment
+from dqn.helper import make_video, normalize_glyphs
+from environment_manager import setup_environment, get_msg
 import os 
 
 
