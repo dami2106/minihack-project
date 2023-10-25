@@ -1,5 +1,7 @@
 # Project: MiniHack The Planet 
-## Code done by Damion, Michaela, Gavin
+## Project done by Damion, Michaela, Gavin
+
+All the code is located in the `Code` folder. Please set that as your working directory before proceeding. 
 
 ### How to run the code:
 There are 2 agents implemented, and several helper files that setup the environments for any testing or evaluation. 
@@ -29,3 +31,27 @@ An environment manager was created where all the environments can be found as we
  - numpy 1.24.3
  - seaborn 0.13.0
  - torch 2.1.0
+
+## File Structure  
+We note that the `Videos` folder contains the best runs of each agent as instructed in the PDF. However, the `Saved_Runs` folder contains all raw output videos, saved models, saved returns and plots from the runs.
+
+```
+minihack_submission
+│   report.pdf
+│   README.md
+│
+└───Code
+│   └───a2c
+│   └───dqn
+│   └───Saved_Runs
+│   │
+│   │   environment_manager.py
+│   │   evaluate_models.py
+│   │   plot_results.py
+│   │   train_a2c.py
+│   │   train_dqn.py
+│   
+└───Videos
+│   └───DQN
+│   └───A2C
+```
